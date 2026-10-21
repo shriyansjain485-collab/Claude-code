@@ -62,6 +62,7 @@ visual: none | <description or Canva link>
 | `content-creator` | Writing posts, threads, carousels, scripts, captions |
 | `community-manager` | Replies to comments/DMs, engagement plan, outreach |
 | `analytics-reviewer` | Reading metrics, weekly/monthly reports, what to do more/less of |
+| `reels-producer` | Instagram Reels: viral hooks, timed scripts, shot lists, covers, reel growth plans |
 
 ## Workflows (slash commands in `.claude/skills/`)
 
@@ -70,6 +71,7 @@ visual: none | <description or Canva link>
 | `/brand-setup` | Interview to fill in the brand profiles |
 | `/content-calendar` | Plan the next 1–4 weeks of posts for both brands |
 | `/write-post` | Draft a post for a given brand + platform + idea |
+| `/reel` | Make an Instagram Reel, a batch of reel ideas, or a 30-day reel growth plan |
 | `/repurpose` | Turn one piece (talk, blog, post, podcast) into many |
 | `/engage` | Draft replies to comments/DMs and a daily engagement list |
 | `/weekly-review` | Summarise performance and set next week's focus |
