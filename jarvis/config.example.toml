@@ -1,0 +1,31 @@
+# Jarvis settings. On first run this file is copied to config.toml, which is
+# yours to edit (config.toml is never sent to git).
+
+[assistant]
+name = "Jarvis"
+address_user_as = "sir"
+style = "concise, polite, a little dry wit; never sycophantic"
+
+[model]
+# Any Ollama model that supports tools. Change the name to swap models.
+name = "qwen3.5:9b"
+# Must be a localhost address. Jarvis refuses to start with anything else.
+# (To use a model on a remote machine, see "Model on a remote VM" in README.)
+host = "http://127.0.0.1:11434"
+think = false          # "thinking" mode: smarter but much slower
+temperature = 0.3
+context_tokens = 8192
+timeout_seconds = 300
+
+[safety]
+# Folders Jarvis may search and read. Paths are relative to this file,
+# or absolute, or start with ~ for your home folder, e.g. "~/Documents".
+allowed_folders = ["./data"]
+# true = show what would change, but never change anything.
+dry_run = false
+# WARNING: true breaks offline mode. No online tools exist yet anyway.
+allow_online_tools = false
+
+[storage]
+# Notes, reminders, drafts and the audit log live here as plain files.
+data_dir = "./data"

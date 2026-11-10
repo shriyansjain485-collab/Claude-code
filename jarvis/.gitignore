@@ -1,0 +1,8 @@
+# Your personal data and settings never go to git
+data/
+config.toml
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/

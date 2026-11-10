@@ -1,10 +1,18 @@
-# Jarvis — Plan (awaiting your approval)
+# Jarvis — Plan
 
 A personal assistant in the style of Jarvis that runs **entirely on your Mac**,
 works with **Wi-Fi off**, and cannot do anything you haven't approved.
 
-> **Status:** plan only. No code, dependencies or models until you say "approved"
-> (or tell me what to change).
+> **Status:** approved on 2026-11-10. **Milestone 1 is built** (see README.md).
+> Confirmed: 16 GB M4 Mac; "daily needs" = notes, reminders, briefing,
+> remembered facts, date/time/maths; default model `qwen3.5:9b`.
+>
+> **Change from the original brief:** you chose to run the model on a
+> **remote/cloud VM** instead of on the Mac. That breaks the offline guarantee
+> (Jarvis needs the internet, and what you type is sent to the VM). The design
+> keeps Jarvis itself talking only to `127.0.0.1`: the VM is reached through
+> an encrypted SSH tunnel (README §5). Running the model on the Mac remains
+> the default and works with no code change.
 
 ---
 
