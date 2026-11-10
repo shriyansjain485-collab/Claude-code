@@ -13,6 +13,10 @@ works with **Wi-Fi off**, and cannot do anything you haven't approved.
 > keeps Jarvis itself talking only to `127.0.0.1`: the VM is reached through
 > an encrypted SSH tunnel (README §5). Running the model on the Mac remains
 > the default and works with no code change.
+>
+> **Added on request:** a browser UI (`./run.sh --ui`), served by Jarvis
+> itself on `127.0.0.1` only, with a secret token. This replaces the earlier
+> "Jarvis itself opens no server" statement in §6.
 
 ---
 

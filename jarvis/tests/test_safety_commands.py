@@ -63,6 +63,6 @@ def test_nothing_in_the_source_can_delete_user_files():
 def test_only_the_model_client_uses_network_libraries():
     pattern = r"^\s*(import|from)\s+(http|urllib\.request|requests|httpx|aiohttp|ftplib|smtplib|telnetlib|socketserver|xmlrpc|websockets?)\b"
     users = {path.name for path, text in _sources().items() if re.search(pattern, text, re.M)}
-    assert users == {"llm.py"}
+    assert users == {"llm.py", "web.py"}      # web.py serves the local page on 127.0.0.1 only
     raw_socket = {path.name for path, text in _sources().items() if re.search(r"^\s*import socket", text, re.M)}
     assert raw_socket == {"netguard.py"}

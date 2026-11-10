@@ -29,3 +29,8 @@ allow_online_tools = false
 [storage]
 # Notes, reminders, drafts and the audit log live here as plain files.
 data_dir = "./data"
+
+[ui]
+# Port for the browser window (./run.sh --ui). It is only ever reachable from
+# this computer (127.0.0.1); that part cannot be changed.
+port = 8765

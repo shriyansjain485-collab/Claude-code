@@ -31,6 +31,7 @@ class Config:
     dry_run: bool = False
     allow_online_tools: bool = False
     data_dir: Path = Path("data")
+    ui_port: int = 8765
 
     @property
     def notes_dir(self) -> Path:
@@ -92,7 +93,8 @@ def parse(data: dict, base_dir: Path) -> Config:
     model = data.get("model", {})
     safety = data.get("safety", {})
     storage = data.get("storage", {})
-    for name, table in (("assistant", assistant), ("model", model), ("safety", safety), ("storage", storage)):
+    ui = data.get("ui", {})
+    for name, table in (("assistant", assistant), ("model", model), ("safety", safety), ("storage", storage), ("ui", ui)):
         if not isinstance(table, dict):
             raise ConfigError(f"config.toml: [{name}] should be a section.")
 
@@ -117,8 +119,13 @@ def parse(data: dict, base_dir: Path) -> Config:
     if not 5 <= timeout <= 3600:
         raise ConfigError("config.toml: timeout_seconds should be between 5 and 3600.")
 
+    ui_port = _expect(ui, "port", int, 8765) if isinstance(ui, dict) else 8765
+    if not 1024 <= ui_port <= 65535:
+        raise ConfigError("config.toml: [ui] port should be between 1024 and 65535.")
+
     return Config(
         base_dir=base_dir,
+        ui_port=ui_port,
         assistant_name=_expect(assistant, "name", str, "Jarvis").strip() or "Jarvis",
         address_user_as=_expect(assistant, "address_user_as", str, "sir").strip() or "sir",
         style=_expect(assistant, "style", str, Config.style),

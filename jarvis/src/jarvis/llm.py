@@ -19,6 +19,10 @@ class ModelError(Exception):
     """The local model could not answer. The message explains what to do."""
 
 
+class Cancelled(ModelError):
+    """The user pressed Stop while the model was answering."""
+
+
 @dataclass
 class ModelReply:
     content: str = ""
@@ -34,6 +38,21 @@ class OllamaClient:
         parts = urlsplit(self.host)
         self._address = (parts.hostname, parts.port or 80)
         self._connection: http.client.HTTPConnection | None = None
+        self._interrupted = False
+        self._sock = None   # the socket of the request in progress, for interrupt()
+
+    def interrupt(self) -> None:
+        """Stop the model from another thread (the Stop button in the UI)."""
+        self._interrupted = True
+        sock = self._sock
+        if sock is not None:
+            try:
+                sock.shutdown(2)  # both directions: wakes up the waiting reader
+            except OSError:
+                pass
+
+    def reset_interrupt(self) -> None:
+        self._interrupted = False
 
     def _connect(self, timeout: float) -> http.client.HTTPConnection:
         connection = http.client.HTTPConnection(*self._address, timeout=timeout)
@@ -101,6 +120,8 @@ class OllamaClient:
             },
         }
         reply = ModelReply()
+        if self._interrupted:
+            raise Cancelled("Stopped.")
         connection = self._connect(timeout=self.config.timeout_seconds)
         try:
             connection.request(
@@ -109,6 +130,9 @@ class OllamaClient:
                 body=json.dumps(payload).encode("utf-8"),
                 headers={"Content-Type": "application/json"},
             )
+            self._sock = connection.sock
+            if self._interrupted:
+                raise Cancelled("Stopped.")
             response = connection.getresponse()
             if response.status != 200:
                 detail = response.read(2000).decode("utf-8", errors="replace")
@@ -137,8 +161,13 @@ class OllamaClient:
                     )
                 if chunk.get("done"):
                     break
-        except (OSError, http.client.HTTPException) as error:
+        except (OSError, http.client.HTTPException, ValueError) as error:
+            if self._interrupted:
+                raise Cancelled("Stopped.") from None
             raise self._unreachable(error) from None
         finally:
+            self._sock = None
             self.cancel()
+        if self._interrupted:
+            raise Cancelled("Stopped.")
         return reply

@@ -3,7 +3,7 @@
 A personal assistant that runs on your own Mac, talks to a local AI model, and
 cannot change anything without your "yes".
 
-**Status: Milestone 1 of 5.** Text chat in the terminal with three abilities:
+**Status: Milestone 1 of 5.** Chat in a browser window or the terminal, with three abilities:
 date/time and arithmetic, finding and reading your files, and notes. Reminders,
 briefings, drafts and voice come in later milestones (see `PLAN.md`).
 
@@ -90,7 +90,16 @@ SHA-256 checksum.
 
 ## 2. Daily use
 
-Start Jarvis:
+Start Jarvis in a browser window:
+
+```bash
+./run.sh --ui
+```
+
+Terminal prints an address ending in `#token=…`. Hold Cmd and click it (or
+copy it into your browser). Keep the Terminal window open while you use it.
+
+Prefer to chat in the terminal itself? Leave off `--ui`:
 
 ```bash
 ./run.sh
@@ -104,19 +113,26 @@ Then just type. For example:
 - `save a note called Shopping: milk, eggs, bread`
 - `add coffee to my shopping note`
 
+| To do this | In the browser window | In the terminal |
+|---|---|---|
+| Cancel what Jarvis is doing right now | **Stop** button, or Esc | **Ctrl+C** |
+| Quit | **Shut down Jarvis** button | type `/stop`, or Ctrl+C twice |
+| **Stop it immediately from anywhere** | `./stop.sh` in Terminal | `./stop.sh` in another window |
+| See what it can do | "What I can do" list | `/tools` |
+| Preview changes without making any | **Dry run** switch | `./run.sh --dry-run`, or `/dry-run` |
+| See recent actions | "Recent activity" list | see below |
+
+More commands:
+
 | To do this | Do this |
 |---|---|
-| Cancel what Jarvis is doing right now | **Ctrl+C** |
-| Quit | type `/stop`, or press Ctrl+C twice |
-| **Stop it immediately from another window** | `./stop.sh` |
-| See what it can do | `/tools` |
-| Preview changes without making any | `./run.sh --dry-run`, or type `/dry-run` |
 | See the last 30 actions it took | `PYTHONPATH=src .venv/bin/python -m jarvis audit` |
 | Check nobody edited the action log | `PYTHONPATH=src .venv/bin/python -m jarvis audit verify` |
 
 ### When Jarvis wants to change something
 
-It shows you exactly what will be written and waits:
+It shows you exactly what will be written and waits. In the browser window
+this is a card with **Yes, apply** and **Cancel** buttons. In the terminal:
 
 ```
 ────────────────────────────────────────────────────────────
@@ -130,7 +146,18 @@ CREATE new note: /Users/you/Claude-code/jarvis/data/notes/shopping.md
 Apply this change, sir? Type "yes" to confirm (anything else cancels):
 ```
 
-Only the word `yes` applies it. Enter, `y`, `ok` and everything else cancel.
+Only the word `yes` (or the **Yes, apply** button) applies it. Enter, `y`,
+`ok`, closing the page and everything else cancel.
+
+### About the browser window
+
+- It is served only to this computer (`127.0.0.1`). Other devices on your
+  Wi-Fi cannot reach it, and that address is not a setting.
+- The address contains a one-time secret, new each time Jarvis starts, so
+  other programs and websites cannot control Jarvis. An old address stops
+  working after a restart; use the new one Terminal prints.
+- The page loads nothing from the internet and works with Wi-Fi off.
+- To change the port, set `port` under `[ui]` in `config.toml`.
 
 ### Where your things are
 
@@ -179,6 +206,7 @@ Your whole home folder or whole disk is refused on purpose.
 | Files are data, not orders | File and note text reaches the model inside "UNTRUSTED DATA" markers. If a file tries to give orders, Jarvis warns you and logs it. Any write still needs your "yes". |
 | Audit log | `data/audit.log` records time, tool, inputs, result and approval for every call. Each line carries a checksum of the one before, so edits are detectable. |
 | Offline | At startup, before anything else loads, Jarvis blocks every connection that isn't to this computer. Blocked attempts are logged. |
+| Browser window | Bound to `127.0.0.1` only, protected by a secret token, refuses requests from other websites, and shows file text as plain text only. |
 | Invalid requests from the model | Every tool call is checked against the tool's schema. After two bad calls Jarvis asks you instead of guessing. |
 
 ---

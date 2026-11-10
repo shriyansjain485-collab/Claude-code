@@ -98,26 +98,36 @@ def _banner(config: Config, registry, rejected: list[str]) -> None:
     _say("Type /help for commands. Ctrl+C cancels; /stop quits.\n")
 
 
-def chat(config: Config, terminal: Terminal | None = None) -> int:
-    terminal = terminal or Terminal(config)
+def prepare(config: Config):
+    """Shared start-up for the terminal and the browser UI.
+
+    Returns (registry, client, audit), or None after printing why it cannot start.
+    """
     audit = AuditLog(config.audit_path)
     netguard.add_listener(lambda what: audit.record("network_guard", {"attempt": what}, "blocked", what))
-
     try:
         registry = build_default_registry(config.allow_online_tools)
     except ValueError as error:
         _say(f"A built-in tool failed its safety check: {error}")
-        return 1
+        return None
     client = OllamaClient(config)
     try:
         client.check_ready()
     except ModelError as error:
         _say(str(error))
-        return 1
-
+        return None
     config.notes_dir.mkdir(parents=True, exist_ok=True)
     killswitch.write_pidfile(config.data_dir)
     killswitch.install_term_handler()
+    return registry, client, audit
+
+
+def chat(config: Config, terminal: Terminal | None = None) -> int:
+    terminal = terminal or Terminal(config)
+    prepared = prepare(config)
+    if prepared is None:
+        return 1
+    registry, client, audit = prepared
     agent = Agent(
         config, client, registry, audit,
         UserIO(approve=terminal.approve, notify=terminal.notify, on_text=terminal.on_text),
@@ -178,6 +188,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="jarvis", description="Your offline personal assistant.")
     parser.add_argument("--config", type=Path, default=DEFAULT_CONFIG, help="path to config.toml")
     parser.add_argument("--dry-run", action="store_true", help="show changes without making them")
+    parser.add_argument("--ui", action="store_true", help="open the browser window instead of terminal chat")
     parser.add_argument(
         "command", nargs="*", default=[],
         help="nothing = chat · stop = stop a running Jarvis · tools = list tools · audit verify = check the audit log",
@@ -194,6 +205,10 @@ def main(argv: list[str] | None = None) -> int:
         config.dry_run = True
 
     command = " ".join(args.command)
+    if command == "" and args.ui:
+        from jarvis import web
+
+        return web.serve(config)
     if command == "":
         return chat(config)
     if command == "stop":

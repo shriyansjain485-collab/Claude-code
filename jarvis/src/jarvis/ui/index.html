@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jarvis</title>
+<link rel="stylesheet" href="/app.css">
+</head>
+<body>
+<div id="app">
+  <aside id="side">
+    <div id="brand">
+      <div id="orb" aria-hidden="true"><span></span></div>
+      <div>
+        <h1 id="name">Jarvis</h1>
+        <p id="status-line">Starting…</p>
+      </div>
+    </div>
+
+    <section>
+      <h2>Status</h2>
+      <ul class="facts">
+        <li><span>Model</span><b id="model">–</b></li>
+        <li><span>Network</span><b class="good">Local only</b></li>
+        <li>
+          <span>Dry run</span>
+          <label class="switch" title="Show changes without making them">
+            <input type="checkbox" id="dry-run"><i></i>
+          </label>
+        </li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>What I can do</h2>
+      <ul id="tools" class="list"></ul>
+    </section>
+
+    <section>
+      <h2>Folders I may read</h2>
+      <ul id="folders" class="list mono"></ul>
+    </section>
+
+    <section class="grow">
+      <h2>Recent activity <button id="refresh-audit" class="link" type="button">refresh</button></h2>
+      <ul id="audit" class="list mono"></ul>
+    </section>
+
+    <button id="shutdown" class="danger" type="button">Shut down Jarvis</button>
+  </aside>
+
+  <main>
+    <div id="banner" hidden></div>
+    <div id="log" aria-live="polite"></div>
+    <form id="composer" autocomplete="off">
+      <textarea id="input" rows="1" placeholder="Ask Jarvis…" maxlength="8000" disabled></textarea>
+      <button id="send" type="submit" disabled>Send</button>
+      <button id="stop" type="button" hidden>Stop</button>
+    </form>
+  </main>
+</div>
+<script src="/app.js"></script>
+</body>
+</html>
