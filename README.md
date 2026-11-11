@@ -23,6 +23,7 @@ Day to day:
 | Write a post | `/write-post personal linkedin <idea>` |
 | Turn a talk/blog/podcast into posts | `/repurpose <link or file>` |
 | Reply to comments or DMs | `/engage company <paste comments>` |
+| Clip a YouTube video into Shorts | `/clip <youtube link>` (first time: `/clip setup`) |
 | See what's working | `/weekly-review` |
 | Rethink positioning | "Ask the brand-strategist to..." |
 
@@ -30,11 +31,13 @@ Day to day:
 
 ```
 CLAUDE.md               rules every agent follows
-brand/                  personal.md and company.md: voice, audience, pillars
-.claude/agents/         brand-strategist, content-creator, community-manager, analytics-reviewer
+brand/                  personal.md, company.md, clips-channel.md: voice, audience, pillars
+.claude/agents/         brand-strategist, content-creator, community-manager, analytics-reviewer, reels-producer, shorts-clipper
 .claude/skills/         the slash-command workflows above
 content/calendar.md     the plan
 content/ideas → drafts → approved → published
+content/clips/          log of source videos clipped and the rights basis for each
+tools/shorts/           the clips pipeline: fetch, cut, upload, stats (see its README)
 content/engagement/     daily reply drafts and engagement lists
 reports/                strategy docs and weekly reviews (drop analytics exports in reports/data/)
 ```

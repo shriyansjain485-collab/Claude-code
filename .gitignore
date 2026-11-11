@@ -1,0 +1,7 @@
+# Clips pipeline: source videos, cut clips, captions (large, and not ours to redistribute)
+work/
+*.mp4
+__pycache__/
+# YouTube credentials never belong in the repo
+client_secret*.json
+token.json
