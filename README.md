@@ -23,7 +23,7 @@ Day to day:
 | Write a post | `/write-post personal linkedin <idea>` |
 | Turn a talk/blog/podcast into posts | `/repurpose <link or file>` |
 | Reply to comments or DMs | `/engage company <paste comments>` |
-| Clip a YouTube video into Shorts | `/clip <youtube link>` (first time: `/clip setup`) |
+| Clip a YouTube video into Shorts | `/clip <youtube link>` (first time: `/clip setup`), or the web dashboard: `python tools/shorts/web.py` |
 | See what's working | `/weekly-review` |
 | Rethink positioning | "Ask the brand-strategist to..." |
 

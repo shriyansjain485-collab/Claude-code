@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Clips Channel</title>
+<style>
+  :root {
+    --bg: #f6f5f1; --panel: #ffffff; --ink: #1c1b19; --muted: #6b6860; --line: #e2dfd6;
+    --accent: #c2410c; --accent-ink: #ffffff; --good: #17734a; --warn: #a15c00; --bad: #b3261e;
+    --radius: 10px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #161513; --panel: #201f1c; --ink: #f0eee8; --muted: #a09c92; --line: #34322d;
+            --accent: #f97316; --accent-ink: #1a0d04; --good: #5fd39b; --warn: #f0b354; --bad: #ff8a80; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  header { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center; justify-content: space-between;
+           padding: 16px 24px; border-bottom: 1px solid var(--line); }
+  h1 { font-size: 18px; margin: 0; letter-spacing: -0.01em; }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 0 0 12px; }
+  h3 { font-size: 15px; margin: 0 0 4px; }
+  main { max-width: 1240px; margin: 0 auto; padding: 24px 16px 80px; display: grid; gap: 24px; }
+  section { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; }
+  .checks { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; color: var(--muted); }
+  .checks b { font-weight: 600; }
+  .ok { color: var(--good); } .no { color: var(--warn); }
+  label { display: grid; gap: 4px; font-size: 13px; color: var(--muted); }
+  input, select, textarea, button { font: inherit; color: inherit; }
+  input, select, textarea { background: var(--bg); border: 1px solid var(--line); border-radius: 8px;
+                            padding: 8px 10px; width: 100%; min-width: 0; }
+  input:focus, select:focus, textarea:focus, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  button { border: 1px solid var(--line); background: var(--panel); border-radius: 8px; padding: 8px 14px;
+           cursor: pointer; white-space: nowrap; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+  button.danger { color: var(--bad); }
+  button:disabled { opacity: .5; cursor: progress; }
+  .row { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); align-items: end; }
+  @media (max-width: 640px) { .row > * { grid-column: auto !important; } header, section { padding: 16px; } }
+  .hint { font-size: 13px; color: var(--muted); margin: 8px 0 0; }
+  .sources { display: grid; gap: 8px; margin-top: 16px; }
+  .source { display: flex; gap: 12px; justify-content: space-between; align-items: center; padding: 10px 12px;
+            border: 1px solid var(--line); border-radius: 8px; }
+  .source.active { border-color: var(--accent); }
+  .source small, .card small { color: var(--muted); }
+  .workbench { display: grid; gap: 20px; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); margin-top: 20px; }
+  @media (max-width: 860px) { .workbench { grid-template-columns: 1fr; } }
+  video { width: 100%; border-radius: 8px; background: #000; display: block; }
+  pre { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 12px; margin: 0;
+        max-height: 300px; overflow: auto; white-space: pre-wrap; font: 12.5px/1.55 ui-monospace, Menlo, monospace; }
+  .moments { display: grid; gap: 8px; margin: 12px 0; }
+  .moment { text-align: left; white-space: normal; display: grid; gap: 2px; }
+  .moment span { color: var(--muted); font-size: 13px; }
+  .board { display: grid; gap: 16px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  @media (max-width: 960px) { .board { grid-template-columns: 1fr; } }
+  .col { display: grid; gap: 12px; align-content: start; }
+  .card { border: 1px solid var(--line); border-radius: 8px; padding: 12px; display: grid; gap: 8px; }
+  .card video { max-height: 420px; object-fit: contain; }
+  .card .actions { display: flex; flex-wrap: wrap; gap: 8px; }
+  .empty { color: var(--muted); font-size: 13px; border: 1px dashed var(--line); border-radius: 8px; padding: 14px; }
+  .tiles { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); margin-bottom: 16px; }
+  .tile { border: 1px solid var(--line); border-radius: 8px; padding: 12px; }
+  .tile b { display: block; font-size: 22px; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+  .tile span { font-size: 12px; color: var(--muted); }
+  .tablewrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; font-variant-numeric: tabular-nums; }
+  th, td { text-align: right; padding: 8px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th:first-child, td:first-child { text-align: left; white-space: normal; }
+  th { color: var(--muted); font-weight: 500; }
+  #toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); max-width: min(92vw, 720px);
+           background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 8px; display: none; }
+  #toast.err { background: var(--bad); color: #fff; }
+  .between { display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between; align-items: center; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Clips Channel</h1>
+  <div class="checks" id="checks"></div>
+</header>
+<main>
+  <section>
+    <h2>1 · Add a source video</h2>
+    <form id="fetchForm" class="row">
+      <label style="grid-column: span 2">YouTube link
+        <input name="url" required placeholder="https://www.youtube.com/watch?v=…"></label>
+      <label>Your right to clip it
+        <select name="rights" required>
+          <option value="">Choose…</option>
+          <option value="own">It's my own video</option>
+          <option value="permission">The creator gave me permission</option>
+          <option value="licensed">Clipping programme / licence</option>
+          <option value="cc-by">Creative Commons on YouTube</option>
+        </select></label>
+      <label>Proof (who, when, link)
+        <input name="note" placeholder="needed for permission or licence"></label>
+      <button class="primary">Fetch video</button>
+    </form>
+    <p class="hint">Only clip videos you made or have permission for. Other people's videos without it get
+      copyright strikes and can't be monetised.</p>
+    <div class="sources" id="sources"></div>
+
+    <div id="bench" hidden>
+      <div class="workbench">
+        <div>
+          <video id="player" controls preload="metadata"></video>
+          <div class="between" style="margin-top:10px">
+            <div style="display:flex; gap:8px">
+              <button type="button" id="markStart">Set start here</button>
+              <button type="button" id="markEnd">Set end here</button>
+            </div>
+            <button type="button" id="suggest">Suggest moments</button>
+          </div>
+          <div class="moments" id="moments"></div>
+          <pre id="transcript"></pre>
+        </div>
+        <form id="cutForm" style="display:grid; gap:12px; align-content:start">
+          <h2>2 · Cut a clip</h2>
+          <div class="row">
+            <label>Start <input name="start" required placeholder="12:30"></label>
+            <label>End <input name="end" required placeholder="13:05"></label>
+          </div>
+          <label>Hook shown for the first 3 seconds (up to 6 words) <input name="hook" maxlength="60"></label>
+          <label>YouTube title <input name="title" required maxlength="100"></label>
+          <label>What the clip is about (one line, for the description) <input name="summary"></label>
+          <label>Tags, comma-separated <input name="tags"></label>
+          <div class="row">
+            <label>Framing
+              <select name="mode"><option value="crop">Fill the frame (talking heads)</option>
+                <option value="blur">Show whole frame on blur</option></select></label>
+            <label>Crop position (0 left · 1 right)
+              <input name="focus" type="number" min="0" max="1" step="0.05" value="0.5"></label>
+          </div>
+          <input name="why" type="hidden">
+          <button class="primary">Cut clip</button>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>3 · Review, approve, post</h2>
+    <div class="board">
+      <div class="col"><h3>Drafts</h3><div class="col" id="col-draft"></div></div>
+      <div class="col"><h3>Approved</h3><div class="col" id="col-approved"></div></div>
+      <div class="col"><h3>Published</h3><div class="col" id="col-published"></div></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="between" style="margin-bottom:12px">
+      <h2 style="margin:0">4 · Weekly numbers</h2>
+      <button type="button" id="refreshStats">Pull last 7 days</button>
+    </div>
+    <div id="stats"></div>
+  </section>
+</main>
+<div id="toast" role="status"></div>
+
+<script>
+const $ = (sel) => document.querySelector(sel);
+const el = (tag, props = {}, ...kids) => {
+  const node = Object.assign(document.createElement(tag), props);
+  node.append(...kids.filter((k) => k != null));
+  return node;
+};
+let current = null;
+
+function toast(message, isError) {
+  const t = $("#toast");
+  t.textContent = message; t.className = isError ? "err" : ""; t.style.display = "block";
+  clearTimeout(toast.timer); toast.timer = setTimeout(() => (t.style.display = "none"), isError ? 9000 : 3500);
+}
+
+async function api(path, data) {
+  const res = await fetch(path, data === undefined ? {} :
+    { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
+  const json = await res.json().catch(() => ({ error: `server error ${res.status}` }));
+  if (!res.ok) throw new Error(json.error || `server error ${res.status}`);
+  return json;
+}
+
+// Runs an action with the button disabled and labelled, then refreshes the page state.
+async function busy(button, label, action) {
+  const old = button.textContent;
+  button.disabled = true; button.textContent = label;
+  try { const out = await action(); await load(); return out; }
+  catch (err) { toast(err.message, true); }
+  finally { button.disabled = false; button.textContent = old; }
+}
+
+const fmt = (n) => (n == null ? "–" : Number(n).toLocaleString(undefined, { maximumFractionDigits: 1 }));
+const clock = (s) => `${Math.floor(s / 60)}:${(s % 60).toFixed(1).padStart(4, "0")}`;
+
+async function load() {
+  const state = await api("/api/state");
+  const s = state.setup;
+  $("#checks").replaceChildren(...[
+    ["ffmpeg", s.ffmpeg, "install ffmpeg"],
+    ["YouTube sign-in", s.signed_in, s.oauth_client ? "run: shorts.py auth" : "see tools/shorts/README.md"],
+    ["Claude suggestions", s.ai, "pip install anthropic"],
+  ].map(([name, ok, fix]) => el("span", { className: ok ? "ok" : "no", title: ok ? "ready" : fix },
+    el("b", {}, ok ? "✓ " : "! "), name + (ok ? "" : ` (${fix})`))));
+
+  $("#sources").replaceChildren(...state.sources.map((src) =>
+    el("div", { className: "source" + (src.video_id === current ? " active" : "") },
+      el("div", {}, el("div", {}, src.title || src.video_id),
+        el("small", {}, `${src.channel || "unknown channel"} · rights: ${src.rights}` +
+          (src.has_transcript ? "" : " · no captions"))),
+      el("button", { type: "button", onclick: () => openSource(src.video_id) }, "Open"))));
+
+  for (const stage of ["draft", "approved", "published"]) {
+    const clips = state.clips.filter((c) => c.stage === stage);
+    $("#col-" + stage).replaceChildren(...(clips.length ? clips.map(card) :
+      [el("div", { className: "empty" }, { draft: "Cut a clip above and it lands here.",
+        approved: "Approve a draft to queue it for posting.", published: "Posted clips show up here." }[stage])]));
+  }
+  renderStats(state.stats);
+}
+
+function card(clip) {
+  const actions = el("div", { className: "actions" });
+  const act = (label, working, cls, fn) => {
+    const b = el("button", { type: "button", className: cls || "", textContent: label });
+    b.onclick = () => busy(b, working, fn);
+    actions.append(b);
+  };
+  if (clip.stage === "draft") {
+    act("Approve", "Approving…", "primary", () => api("/api/approve", { file: clip.file }));
+    act("Discard", "Discarding…", "danger", async () => {
+      if (confirm(`Delete the draft "${clip.title}" and its video file?`)) await api("/api/discard", { file: clip.file });
+    });
+  } else if (clip.stage === "approved") {
+    const privacy = el("select", { style: "width:auto" },
+      ...["private", "unlisted", "public"].map((p) => el("option", { value: p, textContent: p })));
+    actions.append(privacy);
+    act("Post to YouTube", "Uploading…", "primary", async () => {
+      const out = await api("/api/upload", { file: clip.file, privacy: privacy.value });
+      toast(out.output);
+    });
+    act("Back to drafts", "Moving…", "", () => api("/api/unapprove", { file: clip.file }));
+  }
+  return el("div", { className: "card" },
+    clip.has_video ? el("video", { controls: true, preload: "metadata", src: `/media/clip/${clip.stage}/${encodeURIComponent(clip.file)}#t=0.5` })
+                   : el("div", { className: "empty" }, "Video file isn't on this computer."),
+    el("div", {}, el("h3", {}, clip.title || clip.file),
+      el("small", {}, `${clip.source_channel || ""} · ${clip.source_start}–${clip.source_end} · rights: ${clip.rights}`)),
+    clip.youtube_url ? el("a", { href: clip.youtube_url, target: "_blank", rel: "noopener", textContent: clip.youtube_url }) : null,
+    actions.children.length ? actions : null);
+}
+
+async function openSource(id) {
+  current = id;
+  $("#bench").hidden = false;
+  $("#player").src = "/media/source/" + id;
+  $("#moments").replaceChildren();
+  const { transcript } = await api("/api/transcript/" + id);
+  $("#transcript").textContent = transcript || "No captions were found for this video. Use the player to pick start and end.";
+  load();
+}
+
+$("#markStart").onclick = () => ($("#cutForm").start.value = clock($("#player").currentTime));
+$("#markEnd").onclick = () => ($("#cutForm").end.value = clock($("#player").currentTime));
+
+$("#suggest").onclick = (e) => busy(e.target, "Reading transcript…", async () => {
+  const { moments } = await api("/api/suggest/" + current, {});
+  $("#moments").replaceChildren(...moments.map((m) => {
+    const b = el("button", { type: "button", className: "moment" },
+      el("b", {}, `${m.start} – ${m.end} · ${m.hook}`), el("span", {}, m.why));
+    b.onclick = () => {
+      const f = $("#cutForm");
+      for (const key of ["start", "end", "hook", "title", "summary", "why"]) f[key].value = m[key] || "";
+      const [min, sec] = m.start.split(":");
+      $("#player").currentTime = Number(min) * 60 + Number(sec);
+    };
+    return b;
+  }));
+  if (!moments.length) toast("No strong moments found in this transcript.");
+});
+
+$("#fetchForm").onsubmit = (e) => {
+  e.preventDefault();
+  const form = e.target;
+  busy(form.querySelector("button"), "Fetching… this can take a few minutes", async () => {
+    const out = await api("/api/fetch", Object.fromEntries(new FormData(form)));
+    form.reset();
+    const id = /video id:\s+(\S+)/.exec(out.output);
+    if (id) await openSource(id[1]);
+  });
+};
+
+$("#cutForm").onsubmit = (e) => {
+  e.preventDefault();
+  busy(e.target.querySelector("button.primary"), "Cutting…", async () => {
+    await api("/api/cut", { video_id: current, ...Object.fromEntries(new FormData(e.target)) });
+    toast("Clip cut. Review it under Drafts.");
+  });
+};
+
+$("#refreshStats").onclick = (e) => busy(e.target, "Pulling…", () => api("/api/stats", { days: 7 }));
+
+function renderStats(stats) {
+  const box = $("#stats");
+  if (!stats) {
+    box.replaceChildren(el("div", { className: "empty" },
+      "No numbers yet. Sign in to YouTube, post a clip, then pull the last 7 days."));
+    return;
+  }
+  const c = stats.channel || {}, t = stats.totals || {};
+  const revenue = stats.revenue ? fmt(stats.revenue.estimatedRevenue) : "Not monetised";
+  const tiles = [["Views", fmt(c.views)], ["Watch time (min)", fmt(c.estimatedMinutesWatched)],
+    ["Avg % viewed", fmt(c.averageViewPercentage)],
+    ["Subscribers (net)", fmt((c.subscribersGained || 0) - (c.subscribersLost || 0))],
+    ["Total subscribers", fmt(t.subscribers)], ["Revenue", revenue]];
+  const rows = (stats.videos || []).map((v) => el("tr", {},
+    el("td", {}, v.title || v.video), el("td", {}, fmt(v.views)), el("td", {}, fmt(v.averageViewPercentage)),
+    el("td", {}, fmt(v.likes)), el("td", {}, fmt(v.shares)), el("td", {}, fmt(v.subscribersGained))));
+  box.replaceChildren(
+    el("p", { className: "hint", style: "margin:0 0 12px" }, `${stats.period.start} to ${stats.period.end}`),
+    el("div", { className: "tiles" }, ...tiles.map(([label, value]) =>
+      el("div", { className: "tile" }, el("b", {}, value), el("span", {}, label)))),
+    rows.length ? el("div", { className: "tablewrap" }, el("table", {},
+      el("thead", {}, el("tr", {}, ...["Clip", "Views", "Avg % viewed", "Likes", "Shares", "Subs gained"]
+        .map((h) => el("th", {}, h)))), el("tbody", {}, ...rows))) : null);
+}
+
+load().catch((err) => toast(err.message, true));
+</script>
+</body>
+</html>

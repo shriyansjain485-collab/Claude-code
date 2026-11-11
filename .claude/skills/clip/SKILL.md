@@ -14,6 +14,10 @@ Input: `$ARGUMENTS`. Pick a mode:
 - **`setup`** → fill in `brand/clips-channel.md` and walk through
   `tools/shorts/README.md` (ffmpeg, Python packages, Google OAuth sign-in).
 
+The owner can also do all of this in the browser with the dashboard
+(`python tools/shorts/web.py`, see `tools/shorts/README.md`). It reads and
+writes the same draft files, so clips made either way show up in both.
+
 ## Steps for links
 
 1. Read `brand/clips-channel.md`. If it is mostly `TODO`, run `setup` first.

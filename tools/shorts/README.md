@@ -1,6 +1,25 @@
-# Clips pipeline (`shorts.py`)
+# Clips pipeline
 
-The `shorts-clipper` agent drives this script; you rarely run it by hand.
+Two ways to run it: the **web dashboard** (below), or the `shorts-clipper`
+agent via `/clip` in Claude Code. Both drive `shorts.py` and share the same
+files, so you can mix them.
+
+## Web dashboard
+
+```bash
+python tools/shorts/web.py
+```
+
+Then open http://127.0.0.1:8765. Paste a link and your rights basis, pick a
+moment (by hand with the player, or with **Suggest moments**), cut it, watch
+it, approve it, post it, and pull the week's numbers.
+
+- It runs only on your computer and is not reachable from the internet. Don't
+  host it publicly: it has no login and it holds your YouTube sign-in.
+- **Suggest moments** calls the Claude API, which is billed per use. Set
+  `ANTHROPIC_API_KEY` before starting the dashboard. Without it everything
+  else still works.
+- Posting defaults to **private** so you can check the video on YouTube first.
 
 ## One-time setup (on your own computer)
 
