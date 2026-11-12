@@ -155,6 +155,9 @@ nav button:disabled{opacity:.35;cursor:not-allowed}
 .kv span:nth-last-child(-n+2){border-bottom:none}
 .kv span:nth-child(odd){color:var(--muted)}
 .kv span:nth-child(even){font-family:var(--mono);text-align:right}
+.auclog{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:8px 14px;margin:0 0 10px;font-size:13.5px}
+.auclog p{margin:4px 0}
+.auclog p:last-child{font-weight:600;color:var(--coral)}
 #toast{position:fixed;left:50%;bottom:calc(118px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:30;
   background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:14px;font-size:14px;font-weight:500;box-shadow:var(--shadow);
   width:max-content;max-width:min(88vw,420px);text-align:center;animation:toast .25s ease-out}
@@ -205,6 +208,9 @@ const R=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
 const P=a=>a[Math.floor(Math.random()*a.length)];
 const C=p=>Math.random()<p;
 const clamp=(v,a=0,b=100)=>Math.max(a,Math.min(b,Math.round(v)));
+const lc=n=>n?n[0].toLowerCase()+n.slice(1):n;
+const an=n=>/^[aeiou]/i.test(n)?'an':'a';
+const remote=n=>/island|castle|estate|acreage|cabin|villa/i.test(n);
 const fmt=n=>(n<0?'-':'')+'$'+Math.abs(Math.round(n)).toLocaleString('en-US');
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const SAVE='lifetimes-save-v1';
@@ -215,46 +221,132 @@ const FEMALE=['Ava','Maya','Zara','Isla','Priya','Nora','Lena','Sofia','Amara','
 const LAST=['Mercer','Okafor','Lindqvist','Patel','Moreno','Kowalski','Nakamura','Brennan','Haddad','Silva','Novak','Fischer','Achebe','Romano','Varga','Delacroix','Iyer','Castillo','Whitlock','Osei','Jain','Sato','Kaur','Larsen','Mehta','Shah'];
 const COUNTRIES=['United States','India','United Kingdom','Canada','Australia','Germany','Brazil','Japan','Nigeria','Mexico','France','Italy','Spain','South Korea','Sweden','United Arab Emirates','Singapore','Ireland'];
 const KINGDOMS=['Valdoria','Kestrelmark','Aurenne','Thornvale','the Isles of Morrow'];
-const MAJORS=['Computer Science','Business','Biology','Nursing','Engineering','Education','Psychology','Fine Arts','Political Science'];
+const MAJORS=['Computer Science','Business','Biology','Chemistry','Nursing','Engineering','Architecture','Education','Psychology','Fine Arts','Music','Journalism','Political Science','Criminal Justice'];
 const GRADS=[
  {id:'Medicine',years:4,need:'Biology',cost:55000},
+ {id:'Dentistry',years:4,need:'Biology',cost:62000},
+ {id:'Veterinary',years:4,need:'Biology',cost:50000},
+ {id:'Pharmacy',years:3,need:'Chemistry',cost:45000},
  {id:'Law',years:3,need:null,cost:48000},
  {id:'MBA',years:2,need:null,cost:60000},
  {id:'PhD',years:5,need:null,cost:0},
 ];
 const CAREERS=[
- {id:'retail',edu:0,ladder:['Cashier','Sales Associate','Shift Lead','Store Manager','Regional Manager'],pay:[24e3,29e3,36e3,55e3,88e3]},
- {id:'food',edu:0,ladder:['Dishwasher','Line Cook','Sous Chef','Head Chef','Executive Chef'],pay:[22e3,31e3,44e3,64e3,98e3]},
- {id:'driver',edu:0,ladder:['Delivery Driver','Truck Driver','Dispatcher','Fleet Supervisor','Logistics Manager'],pay:[30e3,48e3,52e3,66e3,92e3]},
- {id:'trades',edu:1,ladder:['Apprentice Electrician','Electrician','Master Electrician','Contractor','Construction Firm Owner'],pay:[32e3,54e3,74e3,98e3,150e3]},
- {id:'police',edu:1,clean:true,ladder:['Police Cadet','Police Officer','Detective','Lieutenant','Police Chief'],pay:[38e3,60e3,78e3,100e3,155e3]},
- {id:'office',edu:1,ladder:['Receptionist','Office Assistant','Office Manager','Operations Director','Chief Operating Officer'],pay:[31e3,37e3,56e3,98e3,190e3]},
- {id:'army',edu:1,clean:true,ladder:['Private','Sergeant','Lieutenant','Colonel','General'],pay:[30e3,45e3,65e3,110e3,190e3]},
- {id:'tech',edu:2,major:'Computer Science',ladder:['Junior Developer','Software Engineer','Senior Engineer','Engineering Manager','Chief Technology Officer'],pay:[72e3,100e3,138e3,180e3,300e3]},
- {id:'finance',edu:2,major:'Business',ladder:['Financial Analyst','Associate','Vice President','Director','Managing Director'],pay:[76e3,112e3,165e3,245e3,430e3]},
- {id:'nurse',edu:2,major:'Nursing',ladder:['Staff Nurse','Charge Nurse','Nurse Practitioner','Nursing Director','Chief Nursing Officer'],pay:[63e3,76e3,112e3,138e3,195e3]},
- {id:'eng',edu:2,major:'Engineering',ladder:['Junior Engineer','Civil Engineer','Senior Engineer','Principal Engineer','VP of Engineering'],pay:[68e3,88e3,115e3,150e3,230e3]},
- {id:'teach',edu:2,major:'Education',ladder:['Student Teacher','Teacher','Senior Teacher','Vice Principal','Principal'],pay:[38e3,52e3,64e3,82e3,105e3]},
- {id:'design',edu:2,major:'Fine Arts',ladder:['Junior Designer','Graphic Designer','Art Director','Creative Director','Chief Creative Officer'],pay:[42e3,58e3,85e3,130e3,210e3]},
- {id:'politics',edu:2,major:'Political Science',ladder:['Campaign Staffer','City Councillor','Mayor','Governor','Head of State'],pay:[40e3,62e3,110e3,160e3,400e3]},
- {id:'psych',edu:3,grad:'PhD',ladder:['Research Fellow','Psychologist','Senior Psychologist','Clinic Director','Professor Emeritus'],pay:[55e3,90e3,120e3,160e3,190e3]},
- {id:'doctor',edu:3,grad:'Medicine',ladder:['Resident','Physician','Surgeon','Head of Surgery','Chief of Medicine'],pay:[66e3,215e3,340e3,420e3,560e3]},
- {id:'law',edu:3,grad:'Law',ladder:['Associate Attorney','Senior Associate','Partner','Senior Partner','Judge'],pay:[85e3,140e3,260e3,420e3,240e3]},
- {id:'exec',edu:3,grad:'MBA',ladder:['Management Consultant','Senior Consultant','VP of Strategy','Chief Executive','Chairman of the Board'],pay:[110e3,160e3,240e3,600e3,1.2e6]},
- {id:'acting',fame:true,looks:55,ladder:['Background Extra','Supporting Actor','Lead Actor','Movie Star','Screen Legend'],pay:[15e3,65e3,420e3,3.2e6,12e6]},
- {id:'music',fame:true,looks:0,ladder:['Busker','Session Musician','Signed Artist','Chart Topper','Music Icon'],pay:[9e3,42e3,260e3,2.2e6,9e6]},
- {id:'model',fame:true,looks:72,ladder:['Catalog Model','Runway Model','Campaign Face','Supermodel','Fashion Icon'],pay:[20e3,70e3,300e3,1.8e6,6e6]},
- {id:'sport',fame:true,looks:0,health:72,ladder:['Minor Leaguer','Pro Player','Starter','All-Star','Hall of Famer'],pay:[32e3,520e3,2.1e6,8e6,18e6]},
+ {id:'retail',cat:'Service & retail',edu:0,ladder:['Cashier','Sales Associate','Shift Lead','Store Manager','Regional Manager'],pay:[24e3,29e3,36e3,55e3,88e3]},
+ {id:'food',cat:'Service & retail',edu:0,ladder:['Dishwasher','Line Cook','Sous Chef','Head Chef','Executive Chef'],pay:[22e3,31e3,44e3,64e3,98e3]},
+ {id:'barista',cat:'Service & retail',edu:0,ladder:['Barista','Senior Barista','Café Supervisor','Café Manager','Coffee Chain Area Manager'],pay:[21e3,25e3,31e3,45e3,78e3]},
+ {id:'salon',cat:'Service & retail',edu:0,ladder:['Salon Assistant','Hairstylist','Senior Stylist','Salon Manager','Salon Chain Owner'],pay:[21e3,34e3,48e3,62e3,120e3]},
+ {id:'hotel',cat:'Service & retail',edu:0,ladder:['Bellhop','Front Desk Agent','Concierge','Hotel Manager','Hotel General Manager'],pay:[23e3,30e3,40e3,72e3,130e3]},
+ {id:'fitness',cat:'Service & retail',edu:0,health:50,ladder:['Gym Receptionist','Personal Trainer','Head Trainer','Gym Manager','Fitness Chain Director'],pay:[22e3,42e3,58e3,70e3,140e3]},
+ {id:'callc',cat:'Service & retail',edu:0,ladder:['Call Center Rep','Senior Rep','Team Lead','Call Center Manager','VP of Customer Experience'],pay:[27e3,32e3,42e3,65e3,150e3]},
+ {id:'casino',cat:'Service & retail',edu:0,minAge:21,ladder:['Casino Cashier','Card Dealer','Pit Boss','Casino Floor Manager','Casino Director'],pay:[25e3,38e3,60e3,85e3,170e3]},
+ {id:'janitor',cat:'Service & retail',edu:0,ladder:['Janitor','Custodian','Head Custodian','Facilities Supervisor','Facilities Director'],pay:[24e3,30e3,38e3,55e3,95e3]},
+ {id:'security',cat:'Service & retail',edu:0,ladder:['Security Guard','Security Officer','Security Supervisor','Head of Security','Chief Security Officer'],pay:[27e3,34e3,45e3,70e3,140e3]},
+ {id:'warehouse',cat:'Trades & industry',edu:0,ladder:['Warehouse Picker','Forklift Operator','Shift Supervisor','Warehouse Manager','Distribution Director'],pay:[28e3,36e3,48e3,70e3,120e3]},
+ {id:'construct',cat:'Trades & industry',edu:0,health:45,ladder:['Laborer','Carpenter','Site Foreman','Construction Project Manager','Construction Executive'],pay:[32e3,48e3,66e3,92e3,160e3]},
+ {id:'farm',cat:'Trades & industry',edu:0,ladder:['Farmhand','Tractor Operator','Farm Manager','Ranch Owner','Agribusiness Executive'],pay:[24e3,32e3,50e3,85e3,180e3]},
+ {id:'fishing',cat:'Trades & industry',edu:0,health:55,ladder:['Deckhand','Fisher','First Mate','Boat Captain','Fishing Fleet Owner'],pay:[30e3,45e3,60e3,90e3,200e3]},
+ {id:'trades',cat:'Trades & industry',edu:1,ladder:['Apprentice Electrician','Electrician','Master Electrician','Electrical Contractor','Electrical Firm Owner'],pay:[32e3,54e3,74e3,98e3,150e3]},
+ {id:'plumb',cat:'Trades & industry',edu:1,ladder:['Plumber\'s Helper','Plumber','Master Plumber','Plumbing Contractor','Plumbing Company Owner'],pay:[30e3,52e3,72e3,95e3,145e3]},
+ {id:'mech',cat:'Trades & industry',edu:1,ladder:['Lube Technician','Auto Mechanic','Master Mechanic','Service Manager','Auto Shop Owner'],pay:[28e3,45e3,62e3,80e3,130e3]},
+ {id:'weld',cat:'Trades & industry',edu:1,ladder:['Welding Apprentice','Welder','Pipeline Welder','Welding Inspector','Fabrication Shop Owner'],pay:[30e3,48e3,80e3,90e3,140e3]},
+ {id:'police',cat:'Public service',edu:1,clean:true,ladder:['Police Cadet','Police Officer','Detective','Lieutenant','Police Chief'],pay:[38e3,60e3,78e3,100e3,155e3]},
+ {id:'fire',cat:'Public service',edu:1,clean:true,health:60,ladder:['Probationary Firefighter','Firefighter','Fire Lieutenant','Fire Captain','Fire Chief'],pay:[42e3,58e3,72e3,88e3,140e3]},
+ {id:'army',cat:'Public service',edu:1,clean:true,health:50,ladder:['Private','Sergeant','Lieutenant','Colonel','General'],pay:[30e3,45e3,65e3,110e3,190e3]},
+ {id:'navy',cat:'Public service',edu:1,clean:true,health:50,ladder:['Seaman','Petty Officer','Ensign','Commander','Admiral'],pay:[30e3,46e3,66e3,115e3,200e3]},
+ {id:'ems',cat:'Public service',edu:1,ladder:['EMT','Paramedic','Senior Paramedic','EMS Supervisor','EMS Director'],pay:[34e3,50e3,62e3,78e3,115e3]},
+ {id:'postal',cat:'Public service',edu:0,ladder:['Mail Sorter','Mail Carrier','Route Supervisor','Postmaster','Regional Postal Director'],pay:[32e3,46e3,58e3,80e3,125e3]},
+ {id:'prison',cat:'Public service',edu:1,clean:true,ladder:['Corrections Officer','Senior Officer','Corrections Sergeant','Deputy Warden','Prison Warden'],pay:[38e3,48e3,60e3,85e3,130e3]},
+ {id:'fbi',cat:'Public service',edu:2,major:'Criminal Justice',clean:true,ladder:['Federal Agent Trainee','Special Agent','Senior Special Agent','Supervisory Agent','Bureau Director'],pay:[55e3,80e3,110e3,140e3,220e3]},
+ {id:'office',cat:'Office & business',edu:1,ladder:['Receptionist','Office Assistant','Office Manager','Operations Director','Chief Operating Officer'],pay:[31e3,37e3,56e3,98e3,190e3]},
+ {id:'bank',cat:'Office & business',edu:1,ladder:['Bank Teller','Personal Banker','Loan Officer','Branch Manager','Regional Bank Director'],pay:[30e3,40e3,58e3,90e3,170e3]},
+ {id:'realty',cat:'Office & business',edu:1,ladder:['Leasing Assistant','Real Estate Agent','Senior Agent','Managing Broker','Brokerage Owner'],pay:[28e3,55e3,90e3,140e3,260e3]},
+ {id:'sales',cat:'Office & business',edu:1,ladder:['Sales Development Rep','Account Executive','Senior Account Executive','Sales Director','Chief Revenue Officer'],pay:[40e3,65e3,95e3,150e3,320e3]},
+ {id:'insure',cat:'Office & business',edu:1,ladder:['Claims Assistant','Insurance Agent','Senior Underwriter','Agency Manager','Insurance Executive'],pay:[32e3,48e3,72e3,105e3,210e3]},
+ {id:'finance',cat:'Office & business',edu:2,major:'Business',ladder:['Financial Analyst','Associate','Vice President','Director','Managing Director'],pay:[76e3,112e3,165e3,245e3,430e3]},
+ {id:'account',cat:'Office & business',edu:2,major:'Business',ladder:['Junior Accountant','Accountant','Senior Accountant','Financial Controller','Chief Financial Officer'],pay:[52e3,68e3,88e3,130e3,280e3]},
+ {id:'market',cat:'Office & business',edu:2,major:'Business',ladder:['Marketing Coordinator','Marketing Specialist','Marketing Manager','Marketing Director','Chief Marketing Officer'],pay:[45e3,60e3,90e3,140e3,270e3]},
+ {id:'hr',cat:'Office & business',edu:2,major:'Psychology',ladder:['HR Assistant','HR Generalist','HR Manager','HR Director','Chief People Officer'],pay:[42e3,58e3,85e3,125e3,220e3]},
+ {id:'exec',cat:'Office & business',edu:3,grad:'MBA',ladder:['Management Consultant','Senior Consultant','VP of Strategy','Chief Executive','Chairman of the Board'],pay:[110e3,160e3,240e3,600e3,1.2e6]},
+ {id:'it',cat:'Tech & science',edu:1,ladder:['Help Desk Technician','IT Support Specialist','Systems Administrator','IT Manager','Chief Information Officer'],pay:[38e3,50e3,75e3,110e3,220e3]},
+ {id:'tech',cat:'Tech & science',edu:2,major:'Computer Science',ladder:['Junior Developer','Software Engineer','Senior Engineer','Engineering Manager','Chief Technology Officer'],pay:[72e3,100e3,138e3,180e3,300e3]},
+ {id:'data',cat:'Tech & science',edu:2,major:'Computer Science',ladder:['Data Analyst','Data Scientist','Senior Data Scientist','Head of Data','Chief Data Officer'],pay:[70e3,110e3,145e3,190e3,280e3]},
+ {id:'gamedev',cat:'Tech & science',edu:2,major:'Computer Science',ladder:['QA Tester','Game Programmer','Lead Programmer','Game Director','Studio Head'],pay:[40e3,80e3,115e3,160e3,250e3]},
+ {id:'cyber',cat:'Tech & science',edu:2,major:'Computer Science',clean:true,ladder:['Security Analyst','Penetration Tester','Security Architect','Head of Security Engineering','Chief Information Security Officer'],pay:[75e3,105e3,145e3,185e3,290e3]},
+ {id:'eng',cat:'Tech & science',edu:2,major:'Engineering',ladder:['Junior Engineer','Civil Engineer','Senior Engineer','Principal Engineer','VP of Engineering'],pay:[68e3,88e3,115e3,150e3,230e3]},
+ {id:'aero',cat:'Tech & science',edu:2,major:'Engineering',ladder:['Aerospace Intern','Aerospace Engineer','Propulsion Lead','Chief Engineer','VP of Aerospace'],pay:[60e3,98e3,135e3,175e3,260e3]},
+ {id:'chem',cat:'Tech & science',edu:2,major:'Chemistry',ladder:['Lab Technician','Chemist','Senior Chemist','Research Director','Chief Scientist'],pay:[45e3,70e3,95e3,140e3,210e3]},
+ {id:'arch',cat:'Tech & science',edu:2,major:'Architecture',ladder:['Drafter','Architect','Project Architect','Principal Architect','Architecture Firm Founder'],pay:[50e3,75e3,100e3,150e3,250e3]},
+ {id:'science',cat:'Tech & science',edu:3,grad:'PhD',ladder:['Postdoctoral Fellow','Research Scientist','Senior Scientist','Lab Director','Institute Director'],pay:[55e3,90e3,120e3,160e3,230e3]},
+ {id:'astro',cat:'Tech & science',edu:3,grad:'PhD',health:75,ladder:['Astronaut Candidate','Astronaut','Mission Specialist','Mission Commander','Chief Astronaut'],pay:[70e3,110e3,140e3,160e3,190e3]},
+ {id:'care',cat:'Health & care',edu:0,ladder:['Caregiver','Nursing Assistant','Senior Caregiver','Care Coordinator','Care Home Manager'],pay:[25e3,32e3,38e3,50e3,80e3]},
+ {id:'nurse',cat:'Health & care',edu:2,major:'Nursing',ladder:['Staff Nurse','Charge Nurse','Nurse Practitioner','Nursing Director','Chief Nursing Officer'],pay:[63e3,76e3,112e3,138e3,195e3]},
+ {id:'doctor',cat:'Health & care',edu:3,grad:'Medicine',ladder:['Resident','Physician','Surgeon','Head of Surgery','Chief of Medicine'],pay:[66e3,215e3,340e3,420e3,560e3]},
+ {id:'dentist',cat:'Health & care',edu:3,grad:'Dentistry',ladder:['Associate Dentist','Dentist','Orthodontist','Practice Owner','Dental Group Founder'],pay:[120e3,170e3,240e3,320e3,450e3]},
+ {id:'vet',cat:'Health & care',edu:3,grad:'Veterinary',ladder:['Veterinary Intern','Veterinarian','Senior Veterinarian','Clinic Owner','Animal Hospital Director'],pay:[55e3,100e3,125e3,160e3,210e3]},
+ {id:'pharm',cat:'Health & care',edu:3,grad:'Pharmacy',ladder:['Pharmacy Intern','Pharmacist','Senior Pharmacist','Pharmacy Manager','Pharmacy Chain Director'],pay:[60e3,125e3,140e3,155e3,220e3]},
+ {id:'psych',cat:'Health & care',edu:3,grad:'PhD',ladder:['Research Fellow','Psychologist','Senior Psychologist','Clinic Director','Professor Emeritus'],pay:[55e3,90e3,120e3,160e3,190e3]},
+ {id:'daycare',cat:'Education & social',edu:1,ladder:['Daycare Aide','Preschool Teacher','Lead Teacher','Daycare Director','Childcare Network Owner'],pay:[25e3,32e3,38e3,52e3,90e3]},
+ {id:'teach',cat:'Education & social',edu:2,major:'Education',ladder:['Student Teacher','Teacher','Senior Teacher','Vice Principal','Principal'],pay:[38e3,52e3,64e3,82e3,105e3]},
+ {id:'social',cat:'Education & social',edu:2,major:'Psychology',ladder:['Case Worker','Social Worker','Senior Social Worker','Program Director','Agency Director'],pay:[38e3,50e3,60e3,78e3,110e3]},
+ {id:'library',cat:'Education & social',edu:2,ladder:['Library Assistant','Librarian','Senior Librarian','Head Librarian','Library System Director'],pay:[30e3,52e3,62e3,75e3,110e3]},
+ {id:'prof',cat:'Education & social',edu:3,grad:'PhD',ladder:['Lecturer','Assistant Professor','Associate Professor','Full Professor','University President'],pay:[55e3,80e3,100e3,140e3,450e3]},
+ {id:'photo',cat:'Creative & media',edu:0,ladder:['Photo Assistant','Photographer','Senior Photographer','Studio Owner','Celebrity Photographer'],pay:[25e3,40e3,60e3,90e3,200e3]},
+ {id:'tattoo',cat:'Creative & media',edu:0,ladder:['Tattoo Apprentice','Tattoo Artist','Senior Tattoo Artist','Tattoo Shop Owner','Celebrity Tattoo Artist'],pay:[18e3,45e3,70e3,110e3,250e3]},
+ {id:'radio',cat:'Creative & media',edu:1,ladder:['Radio Intern','Radio Host','Morning Show Host','Program Director','Station Owner'],pay:[24e3,45e3,85e3,120e3,250e3]},
+ {id:'design',cat:'Creative & media',edu:2,major:'Fine Arts',ladder:['Junior Designer','Graphic Designer','Art Director','Creative Director','Chief Creative Officer'],pay:[42e3,58e3,85e3,130e3,210e3]},
+ {id:'fashion',cat:'Creative & media',edu:2,major:'Fine Arts',ladder:['Design Assistant','Fashion Designer','Senior Designer','Head of Design','Fashion House Founder'],pay:[35e3,60e3,90e3,160e3,400e3]},
+ {id:'journo',cat:'Creative & media',edu:2,major:'Journalism',ladder:['Junior Reporter','Reporter','Senior Correspondent','Editor','Editor-in-Chief'],pay:[38e3,52e3,75e3,95e3,180e3]},
+ {id:'orch',cat:'Creative & media',edu:2,major:'Music',ladder:['Music Tutor','Orchestra Musician','Principal Player','Concertmaster','Music Director'],pay:[30e3,60e3,85e3,120e3,200e3]},
+ {id:'paralegal',cat:'Law & government',edu:1,ladder:['Legal Secretary','Paralegal','Senior Paralegal','Legal Office Administrator','Practice Manager'],pay:[36e3,52e3,65e3,78e3,100e3]},
+ {id:'law',cat:'Law & government',edu:3,grad:'Law',ladder:['Associate Attorney','Senior Associate','Partner','Senior Partner','Judge'],pay:[85e3,140e3,260e3,420e3,240e3]},
+ {id:'politics',cat:'Law & government',edu:2,major:'Political Science',ladder:['Campaign Staffer','City Councillor','Mayor','Governor','Head of State'],pay:[40e3,62e3,110e3,160e3,400e3]},
+ {id:'diplomat',cat:'Law & government',edu:2,major:'Political Science',clean:true,ladder:['Foreign Service Officer','Consul','Deputy Ambassador','Ambassador','Foreign Minister'],pay:[60e3,85e3,115e3,160e3,250e3]},
+ {id:'driver',cat:'Transport',edu:0,ladder:['Delivery Driver','Truck Driver','Dispatcher','Fleet Supervisor','Logistics Manager'],pay:[30e3,48e3,52e3,66e3,92e3]},
+ {id:'rail',cat:'Transport',edu:1,ladder:['Conductor Trainee','Train Conductor','Locomotive Engineer','Yardmaster','Rail Operations Director'],pay:[40e3,60e3,78e3,90e3,140e3]},
+ {id:'cabin',cat:'Transport',edu:1,looks:40,ladder:['Flight Attendant','Senior Flight Attendant','Purser','Inflight Supervisor','Inflight Director'],pay:[32e3,42e3,55e3,70e3,110e3]},
+ {id:'pilot',cat:'Transport',edu:2,health:60,ladder:['First Officer Trainee','First Officer','Captain','Senior Captain','Chief Pilot'],pay:[50e3,95e3,180e3,240e3,320e3]},
+ {id:'acting',cat:'Fame',edu:0,fame:true,looks:55,ladder:['Background Extra','Supporting Actor','Lead Actor','Movie Star','Screen Legend'],pay:[15e3,65e3,420e3,3.2e6,12e6]},
+ {id:'music',cat:'Fame',edu:0,fame:true,ladder:['Busker','Session Musician','Signed Artist','Chart Topper','Music Icon'],pay:[9e3,42e3,260e3,2.2e6,9e6]},
+ {id:'model',cat:'Fame',edu:0,fame:true,looks:72,ladder:['Catalog Model','Runway Model','Campaign Face','Supermodel','Fashion Icon'],pay:[20e3,70e3,300e3,1.8e6,6e6]},
+ {id:'sport',cat:'Fame',edu:0,fame:true,health:72,ladder:['Minor Leaguer','Pro Player','Starter','All-Star','Hall of Famer'],pay:[32e3,520e3,2.1e6,8e6,18e6]},
+ {id:'stream',cat:'Fame',edu:0,fame:true,ladder:['Small Streamer','Partnered Streamer','Top Creator','Internet Celebrity','Media Mogul'],pay:[6e3,40e3,300e3,1.5e6,7e6]},
+ {id:'comedy',cat:'Fame',edu:0,fame:true,ladder:['Open-Mic Comic','Club Comedian','Headliner','Comedy Special Star','Comedy Legend'],pay:[5e3,35e3,150e3,1.2e6,5e6]},
+ {id:'author',cat:'Fame',edu:0,fame:true,smarts:60,ladder:['Self-Published Author','Published Author','Bestselling Author','Award-Winning Author','Literary Legend'],pay:[4e3,45e3,250e3,900e3,3e6]},
+ {id:'dj',cat:'Fame',edu:0,fame:true,ladder:['Party DJ','Club DJ','Festival DJ','Headlining DJ','Superstar DJ'],pay:[12e3,50e3,300e3,2e6,8e6]},
+ {id:'tvchef',cat:'Fame',edu:0,fame:true,ladder:['Cooking Show Contestant','Guest Chef','Cooking Show Host','Celebrity Chef','Culinary Empire Owner'],pay:[10e3,60e3,250e3,1.1e6,4e6]},
 ];
+const JOB_CATS=[...new Set(CAREERS.map(c=>c.cat))];
 const PARTTIME=[['Lifeguard',7e3],['Babysitter',5e3],['Barista',8e3],['Dog Walker',4e3],['Grocery Bagger',6e3],['Tutor',9e3]];
 const BIZ=[
  {id:'Coffee Shop',cost:60e3,rev:110e3},{id:'Food Truck',cost:40e3,rev:80e3},{id:'Fitness Studio',cost:140e3,rev:230e3},
  {id:'Clothing Label',cost:90e3,rev:170e3},{id:'Restaurant',cost:220e3,rev:380e3},{id:'Software Startup',cost:300e3,rev:520e3},
  {id:'Car Dealership',cost:600e3,rev:1.1e6},{id:'Hotel',cost:2.5e6,rev:3.6e6},
 ];
-const HOUSES=['Studio apartment','Two-bed condo','Townhouse','Suburban house','Lake cabin','Beach house','City penthouse','Country estate','Hilltop mansion'];
-const CARS=[['Used hatchback',6e3],['Compact sedan',24e3],['Family SUV',42e3],['Electric sedan',55e3],['Pickup truck',48e3],['Sports coupe',95e3],['Luxury saloon',140e3],['Supercar',320e3],['Hypercar',2.1e6]];
-const JEWELS=[['Silver necklace',800],['Gold watch',9e3],['Diamond ring',25e3],['Emerald earrings',40e3],['Vintage chronograph',120e3]];
+const HOODS=['Downtown','Riverside','Old Town','Hillcrest','Harbor District','Maple Heights','Lakeside','Westfield','Cedar Park','the Arts Quarter'];
+const HOMES=[['Studio apartment',90e3],['One-bed condo',160e3],['Two-bed condo',240e3],['Townhouse',330e3],['Family house',450e3],['Farmhouse with acreage',620e3],['Mountain cabin',520e3],['Beach house',950e3],['City penthouse',1.8e6],['Lakeside villa',2.6e6],['Mansion',5.2e6],['Vineyard estate',8e6],['Historic castle',14e6],['Private island',42e6]];
+const SHOP={
+ car:{title:'Car dealership',items:[['Used hatchback',6e3],['Compact sedan',24e3],['Family minivan',36e3],['Family SUV',42e3],['Pickup truck',48e3],['Electric sedan',55e3],['Off-road 4x4',62e3],['Sports coupe',95e3],['Luxury saloon',140e3],['Convertible grand tourer',210e3],['Supercar',320e3],['Hypercar',2.1e6]]},
+ moto:{title:'Motorcycles',items:[['Moped',2.5e3],['Dirt bike',7e3],['Cruiser motorcycle',18e3],['Sport bike',24e3],['Touring motorcycle',32e3]]},
+ boat:{title:'Marina',items:[['Kayak',1.2e3],['Jet ski',12e3],['Fishing boat',35e3],['Sailboat',90e3],['Speedboat',150e3],['Motor yacht',1.2e6],['Superyacht',45e6]]},
+ air:{title:'Aircraft sales',items:[['Ultralight plane',60e3],['Single-engine plane',350e3],['Seaplane',900e3],['Helicopter',1.8e6],['Light jet',6e6],['Private jet',25e6]]},
+ jewel:{title:'Jeweler',items:[['Silver necklace',800],['Pearl earrings',2.5e3],['Gold bracelet',6e3],['Diamond ring',25e3],['Emerald earrings',40e3],['Sapphire tiara',180e3]]},
+ watch:{title:'Watch boutique',items:[['Smartwatch',600],['Steel dive watch',7e3],['Gold dress watch',22e3],['Perpetual calendar',95e3],['Tourbillon masterpiece',400e3]]},
+ bag:{title:'Designer boutique',items:[['Designer sneakers',900],['Leather jacket',3e3],['Designer handbag',9e3],['Couture gown',30e3],['Crocodile-leather handbag',120e3]]},
+ item:{title:'Home & hobbies',items:[['Smartphone',1.2e3,{happy:1}],['Gaming PC',2.5e3,{happy:2}],['Telescope',1.5e3,{smarts:1}],['Home gym',6e3,{health:2}],['Hot tub',9e3,{happy:2}],['Grand piano',45e3,{smarts:2,happy:1}],['Home library',15e3,{smarts:2}],['Home cinema',20e3,{happy:2}]]},
+};
+const ATYPE={house:{l:'Property',g:[-3,7],up:.01},car:{l:'Car',g:[-16,-12],up:.02,flat:800},moto:{l:'Motorcycle',g:[-15,-10],up:.03,flat:200},
+ boat:{l:'Boat',g:[-12,-6],up:.06},air:{l:'Aircraft',g:[-10,-5],up:.08},jewel:{l:'Jewelry',g:[-2,4]},watch:{l:'Watch',g:[-3,6]},bag:{l:'Designer goods',g:[-12,0]},
+ item:{l:'Home & hobbies',g:[-25,-12]},art:{l:'Art',g:[-15,25]},collect:{l:'Collectible',g:[-10,18]},classic:{l:'Classic car',g:[-6,12],up:.02}};
+const ARTISTS=['Mira Solberg','Teodor Vance','Anouk Reyes','Hollis Grey','Yuki Tanabe','Bastien Okoro','Lena Varga','Coralie Dunn','Ezra Whitcombe','Sana Qureshi'];
+const ARTWORKS=['Blue Harbor at Dusk','Study of a Red Chair','The Quiet Orchard','Night Market','Self-Portrait with Fox','Composition No. 9','Gulls over Salt Flats','The Long Table','Woman Reading by Lamplight','Interior with Lemons','Storm over the Quarry','Three Pears'];
+const COLLECTIBLES=[['Gold coin from 1857',40e3],['Signed championship baseball bat',25e3],['Vintage space-program flight suit',120e3],['Dinosaur fossil skull',900e3],['Iron meteorite',60e3],['First-edition novel from 1925',85e3],['Antique grandfather clock',18e3],['Qing-era porcelain vase',300e3],['Medieval knight\'s helmet',150e3],['Original arcade cabinet',12e3],['Rare stamp sheet',70e3],['Victorian music box',9e3],['Ancient Roman oil lamp',22e3],['Signed concert guitar',55e3]];
+const CLASSICS=[['1961 roadster',180e3],['1957 gull-wing coupe',1.4e6],['1969 muscle car',95e3],['1938 grand touring saloon',600e3],['1972 rally coupe',140e3],['1955 racing spyder',2.5e6]];
+const STORAGE=['A dusty 5×10 unit with a padlock rusted shut','A 10×10 unit stacked with taped boxes','A 10×20 unit with a tarp over something large','A climate-controlled unit with wooden crates','A unit full of old furniture and garbage bags'];
+const MARKET=[
+ {s:'NWR',n:'Northwind Robotics',p:84,d:.07,v:.28},{s:'HLO',n:'Helio Solar',p:31,d:.06,v:.35},{s:'GRN',n:'Grainline Foods',p:56,d:.04,v:.12},
+ {s:'QTX',n:'Quantix Bio',p:22,d:.05,v:.5},{s:'VLA',n:'Vela Airlines',p:18,d:.03,v:.3},{s:'BYH',n:'ByteHarbor',p:140,d:.08,v:.25},
+ {s:'GLM',n:'Glimcoin',p:2.4,d:.15,v:.9,c:1},{s:'RBL',n:'Rubble Token',p:.08,d:.1,v:1.2,c:1},{s:'NMB',n:'Nimbus Chain',p:310,d:.12,v:.7,c:1}];
 const ILL=[{n:'flu',h:6,cure:.9,cost:200},{n:'migraines',h:4,cure:.7,cost:400},{n:'pneumonia',h:15,cure:.75,cost:3e3},{n:'diabetes',h:8,cure:.25,cost:4e3},{n:'heart disease',h:18,cure:.35,cost:25e3},{n:'cancer',h:25,cure:.4,cost:60e3},{n:'depression',h:5,hap:15,cure:.55,cost:1.5e3}];
 const PETS=[['dog',300],['cat',150],['rabbit',60],['parrot',800],['horse',8e3],['tortoise',120]];
 const PETNAMES=['Biscuit','Pepper','Juniper','Mochi','Rocket','Olive','Pickle','Nimbus','Waffles','Sable'];
@@ -296,7 +388,9 @@ const first=()=>S.name.split(' ')[0];
 const he=()=>S.g==='M';
 const alive=r=>S.people.filter(p=>p.alive&&(!r||p.rel.startsWith(r)));
 const partner=()=>S.people.find(p=>p.alive&&['Partner','Fiancé','Fiancée','Spouse'].includes(p.rel));
-const netWorth=()=>S.money+S.invest+S.assets.reduce((a,x)=>a+x.value,0)+S.biz.reduce((a,b)=>a+b.value,0);
+const portValue=()=>{ensureMarket();return Object.entries(S.port).reduce((a,[k,n])=>a+n*S.market[k],0)};
+const netWorth=()=>S.money+S.invest+portValue()+S.assets.reduce((a,x)=>a+x.value-(x.loan||0),0)+S.biz.reduce((a,b)=>a+b.value,0);
+function ensureMarket(){if(!S.market){S.market={};MARKET.forEach(m=>S.market[m.s]=m.p)}if(!S.port)S.port={}}
 
 function save(){try{localStorage.setItem(SAVE,JSON.stringify({S,nextId}))}catch(e){}}
 function load(){try{const d=JSON.parse(localStorage.getItem(SAVE)||'null');if(d&&d.S){S=d.S;nextId=d.nextId||9999;return true}}catch(e){}return false}
@@ -484,7 +578,7 @@ function eduYear(){
     s.left--;e.grades=clamp(e.grades+(S.stats.smarts-50)/10+R(-5,5));
     if(s.left<=0){
       if(s.type==='uni'){e.level=Math.max(e.level,2);e.major=s.major;e.degrees.push(`Bachelor's in ${s.major}`);L(`I graduated from university with a degree in ${s.major}.`,'good');st('smarts',5)}
-      else{e.level=3;e.grad=e.grad||[];e.grad.push(s.major);e.degrees.push(s.major==='Medicine'?'Doctor of Medicine':s.major==='Law'?'Juris Doctor':s.major==='MBA'?'MBA':'PhD');L(`I graduated from ${s.major==='PhD'?'my doctoral program':s.major+' school'}.`,'good');st('smarts',7)}
+      else{e.level=3;e.grad=e.grad||[];e.grad.push(s.major);e.degrees.push(s.major==='Medicine'?'Doctor of Medicine':s.major==='Law'?'Juris Doctor':s.major==='MBA'?'MBA':s.major==='PhD'?'PhD':'Doctor of '+s.major);L(`I graduated from ${s.major==='PhD'?'my doctoral program':s.major==='Veterinary'?'veterinary school':s.major+' school'}.`,'good');st('smarts',7)}
       e.school=null;st('happy',10);
     }
   }
@@ -508,10 +602,11 @@ function finances(){
     const atHome=!home&&S.age<26&&alive().some(p=>p.rel.startsWith('Mother')||p.rel.startsWith('Father'))&&!partner();
     const live=atHome?R(1,3)*1000:home?R(9,14)*1000:R(14,22)*1000;S.money-=live;
     if(atHome&&S.age===18)L('I am still living with my parents to save money.');
-    S.assets.forEach(a=>{if(a.type==='house'){a.value=Math.round(a.value*(1+R(-3,7)/100));S.money-=Math.round(a.value*0.01)}
-      else if(a.type==='car'){a.value=Math.round(a.value*(0.84+Math.random()*0.04));S.money-=Math.round(800+a.value*0.02)}});
+
     S.pets.filter(p=>p.alive).forEach(()=>S.money-=600);
   }
+  assetYear();
+  marketYear();
   // investments
   if(S.invest>0){const r=(Math.random()*0.5-0.18);const g=Math.round(S.invest*r);S.invest+=g;L(`My investment portfolio ${g>=0?'gained':'lost'} ${fmt(Math.abs(g))}.`,g>=0?'good':'bad')}
   // businesses
@@ -689,10 +784,15 @@ function prisonEvent(){popup('Yard time','An inmate in the yard is trying to sta
 /* ---------- career ---------- */
 function eduOk(c){
   const e=S.edu;
-  if(c.edu===1&&e.level<1)return 'Needs a high school diploma';
-  if(c.edu===2&&!(e.degrees.some(d=>d.includes(c.major))))return `Needs a ${c.major} degree`;
+  if(c.minAge&&S.age<c.minAge)return `Must be ${c.minAge} or older`;
+  if(c.edu>=1&&e.level<1)return 'Needs a high school diploma';
+  if(c.edu===2&&c.major&&!e.degrees.some(d=>d.includes(c.major)))return `Needs a ${c.major} degree`;
+  if(c.edu===2&&!c.major&&e.level<2)return "Needs any bachelor's degree";
   if(c.edu===3&&!((e.grad||[]).includes(c.grad)))return `Needs ${c.grad==='PhD'?'a PhD':c.grad==='MBA'?'an MBA':c.grad+' school'}`;
   if(c.clean&&S.record>0)return 'Requires a clean record';
+  if(c.health&&S.stats.health<c.health)return `Needs health of ${c.health}%+`;
+  if(c.looks&&S.stats.looks<c.looks)return `Needs looks of ${c.looks}%+`;
+  if(c.smarts&&S.stats.smarts<c.smarts)return `Needs smarts of ${c.smarts}%+`;
   return '';
 }
 function careerMenu(){sheet('Career',api=>{
@@ -723,8 +823,27 @@ function careerMenu(){sheet('Career',api=>{
   if(S.age>=18&&!S.job){api.item('Job listings','Full-time openings this year',null,jobsMenu);
     if(!S.part)api.item('Part-time jobs','',null,()=>sheet('Part-time jobs',a=>PARTTIME.forEach(([t,p])=>a.item(t,'Fits around school',fmt(p)+'/yr',act('',()=>{S.part={title:t,pay:p};L(`I started working part-time as a ${t}.`)})))));
     api.item('Fame careers','Acting, music, modeling, sports',null,fameMenu)}
-  if(S.age>=18&&!e.school){api.sec('Freelance');api.item('Pick up a gig','Odd jobs for quick cash',null,act('',()=>{if(S.acts.gig>=3){L('No more gigs available this year.');return}S.acts.gig=(S.acts.gig||0)+1;const p=R(2,12)*100;S.money+=p;L(`I made ${fmt(p)} from a freelance gig.`)}))}
+  if(S.age>=16){api.sec('Side hustles');api.item('Side hustles','Up to three a year, alongside anything else',`${3-(S.acts.gig||0)} left`,hustleMenu)}
   if(S.age>=18){api.sec('Business');api.item('My businesses',`${S.biz.length} owned`,null,bizMenu)}
+});}
+
+const HUSTLES=[
+ ['Drive for a rideshare app','Needs a car',()=>S.assets.some(a=>a.type==='car'||a.type==='classic'),()=>R(20,60)*100,'driving for a rideshare app'],
+ ['Deliver food','',()=>true,()=>R(8,30)*100,'delivering food'],
+ ['Tutor students','Better with high smarts',()=>S.stats.smarts>=50,()=>Math.round(S.stats.smarts*R(15,40)),'tutoring'],
+ ['Pet-sit for neighbors','',()=>true,()=>R(3,15)*100,'pet-sitting'],
+ ['Sell crafts online','',()=>true,()=>C(.2)?R(30,90)*100:R(1,10)*100,'selling handmade crafts online'],
+ ['Flip thrift-store furniture','',()=>S.age>=18,()=>R(-5,40)*100,'flipping thrift-store furniture'],
+ ['Freelance coding','Needs a Computer Science degree',()=>S.edu.degrees.some(d=>d.includes('Computer')),()=>R(50,200)*100,'freelance coding'],
+ ['Wedding photography','',()=>S.age>=18,()=>R(15,60)*100,'shooting weddings'],
+ ['Mow lawns','',()=>S.age<60,()=>R(3,12)*100,'mowing lawns'],
+];
+function hustleMenu(){sheet('Side hustles',api=>{
+  api.sub(`You can fit ${3-(S.acts.gig||0)} more side hustles into this year.`);
+  HUSTLES.forEach(([n,sub,ok,pay,verb])=>api.item(n,sub,null,act('',()=>{
+    if((S.acts.gig||0)>=3){L('I had no time left for side hustles this year.');return}
+    S.acts.gig=(S.acts.gig||0)+1;const p=pay();S.money+=p;
+    L(p>=0?`I made ${fmt(p)} ${verb}.`:`I lost ${fmt(-p)} ${verb}.`,p>0?'good':p<0?'bad':'');st('happy',-1)}),!ok()||(S.acts.gig||0)>=3));
 });}
 function uniMenu(){sheet('Choose a major',api=>{
   api.sub(`Tuition is about ${fmt(28e3)} a year for four years. ${S.stats.smarts>=80?'Your smarts qualify you for a full scholarship.':'Strong students can get a scholarship.'}`);
@@ -748,9 +867,15 @@ function jobsMenu(){
   if(!S.flags.board||S.flags.boardAge!==S.age){S.flags.boardAge=S.age;S.flags.board=CAREERS.filter(c=>!c.fame).sort(()=>Math.random()-.5).slice(0,10).map(c=>c.id)}
   sheet('Job listings',api=>{
     if(S.edu.school){api.sub('You are a full-time student. Finish your degree or drop out first.');api.item('Drop out of school','',null,act('',()=>{L(`I dropped out of ${S.edu.school.major}.`,'bad');S.edu.school=null}));return}
-    api.sub('New openings appear every year.');
-    S.flags.board.map(id=>CAREERS.find(c=>c.id===id)).forEach(c=>{const why=eduOk(c);
-      api.item(c.ladder[0],why||'You meet the requirements',fmt(c.pay[0])+'/yr',()=>interview(c),!!why)});
+    api.sub('Hot openings change every year. Browse by field to see every career.');
+    api.sec('Hiring now');
+    S.flags.board.map(id=>CAREERS.find(c=>c.id===id)).filter(Boolean).forEach(c=>{const why=eduOk(c);
+      api.item(c.ladder[0],why||c.cat,fmt(c.pay[0])+'/yr',()=>interview(c),!!why)});
+    api.sec('Browse by field');
+    JOB_CATS.filter(k=>k!=='Fame').forEach(k=>{const list=CAREERS.filter(c=>c.cat===k);const ok=list.filter(c=>!eduOk(c)).length;
+      api.item(k,`${list.length} careers · ${ok} you qualify for`,null,()=>sheet(k,a=>{
+        a.sub('Starting role, then the top of the ladder you can climb to.');
+        list.forEach(c=>{const why=eduOk(c);a.item(c.ladder[0],(why?why+' · ':'')+`Top: ${c.ladder[4]} (${fmt(c.pay[4])})`,fmt(c.pay[0]),()=>interview(c),!!why)})}))});
   });
 }
 function hire(c,level=0){S.job={career:c.id,title:c.ladder[level],level,salary:Math.round(c.pay[level]*(0.92+Math.random()*0.2)),perf:R(50,70),years:0,inLevel:0,fame:!!c.fame};S.flags.worked=true;S.part=null}
@@ -769,7 +894,7 @@ function interview(c){
 function fameMenu(){sheet('Fame careers',api=>{
   api.sub('These are hard to break into. Looks and luck matter. Fame grows every year you work.');
   CAREERS.filter(c=>c.fame).forEach(c=>{
-    const why=c.looks&&S.stats.looks<c.looks?`Needs looks of ${c.looks}%+`:c.health&&S.stats.health<c.health?`Needs health of ${c.health}%+`:'';
+    const why=eduOk(c);
     api.item(c.ladder[0],why||'Audition this year',fmt(c.pay[0])+'/yr',act('',()=>{
       if(S.acts['aud'+c.id]){L('I already auditioned for that this year.');return}S.acts['aud'+c.id]=1;
       if(C(.35+S.stats.looks/400+S.fame/300)){hire(c);S.fame=clamp(S.fame+5);L(`I landed work as a ${c.ladder[0]}!`,'good')}else L(`My audition as a ${c.ladder[0]} went nowhere.`,'bad')}),!!why)});
@@ -801,27 +926,190 @@ function bizDetail(id){const b=()=>S.biz.find(x=>x.id===id);if(!b())return;sheet
 });}
 
 /* ---------- assets ---------- */
+function assetYear(){
+  let rent=0;
+  S.assets.forEach(a=>{
+    const t=ATYPE[a.type]||ATYPE.item;const g=R(t.g[0],t.g[1])/100;a.value=Math.max(0,Math.round(a.value*(1+g)));
+    const up=Math.round((t.flat||0)+a.value*(t.up||0));if(up)S.money-=up;
+    if(a.loan>0){const pay=Math.min(a.loan*1.06,Math.round(a.price*0.08));S.money-=pay;a.loan=Math.max(0,Math.round(a.loan*1.05-pay));if(a.loan===0)L(`I paid off the mortgage on my ${lc(a.name)}.`,'good')}
+    if(a.rented){const r=Math.round(a.value*R(4,7)/100);S.money+=r;rent+=r;a.rentTotal=(a.rentTotal||0)+r;
+      if(C(.08)){const d=Math.round(a.value*0.03);S.money-=d;L(`Tenants damaged my ${lc(a.name)}. Repairs cost ${fmt(d)}.`,'bad')}}
+    if(a.fx)Object.entries(a.fx).forEach(([k,v])=>st(k,v));
+  });
+  if(rent)L(`My rental properties brought in ${fmt(rent)} this year.`,'good');
+}
+function marketYear(){
+  ensureMarket();
+  MARKET.forEach(m=>{let r=m.d+m.v*(Math.random()+Math.random()+Math.random()-1.5)*1.2;if(m.c&&C(.06))r=-0.85;if(m.c&&C(.04))r=3;
+    S.market[m.s]=Math.max(0.0001,+(S.market[m.s]*(1+r)).toFixed(4))});
+  const held=Object.keys(S.port).filter(k=>S.port[k]>0);
+  if(held.length){const v=portValue();L(`My stocks and crypto are worth ${fmt(v)}.`)}
+}
 function assetsMenu(){sheet('Assets',api=>{
-  api.html(`<div class="kv"><span>Cash</span><span>${fmt(S.money)}</span><span>Investments</span><span>${fmt(S.invest)}</span><span>Property &amp; goods</span><span>${fmt(S.assets.reduce((a,x)=>a+x.value,0))}</span><span>Businesses</span><span>${fmt(S.biz.reduce((a,x)=>a+x.value,0))}</span><span><b>Net worth</b></span><span><b>${fmt(netWorth())}</b></span></div>`);
-  if(S.assets.length){api.sec('Owned');S.assets.forEach(a=>api.item(a.name,a.type==='house'?'Home':a.type==='car'?'Vehicle':'Jewelry',fmt(a.value),()=>popup(a.name,`Sell your ${a.name.toLowerCase()} for ${fmt(a.value)}?`,[['Sell it',()=>{S.money+=a.value;S.assets=S.assets.filter(x=>x!==a);L(`I sold my ${a.name.toLowerCase()} for ${fmt(a.value)}.`)}],['Keep it',null]])))}
-  if(S.age<18){api.sub('You can buy property when you turn 18.');return}
-  api.sec('Shop');
-  api.item('Real estate','Houses, condos and estates',null,houseShop);
-  api.item('Car dealership','',null,()=>sheet('Car dealership',a=>CARS.forEach(([n,p])=>a.item(n,'',fmt(p),act('',()=>buy('car',n,p)),S.money<p))));
-  api.item('Jeweler','',null,()=>sheet('Jeweler',a=>JEWELS.forEach(([n,p])=>a.item(n,'',fmt(p),act('',()=>buy('jewel',n,p)),S.money<p))));
+  const loans=S.assets.reduce((a,x)=>a+(x.loan||0),0);
+  api.html(`<div class="kv"><span>Cash</span><span>${fmt(S.money)}</span><span>Index fund</span><span>${fmt(S.invest)}</span><span>Stocks &amp; crypto</span><span>${fmt(portValue())}</span><span>Property &amp; possessions</span><span>${fmt(S.assets.reduce((a,x)=>a+x.value,0))}</span><span>Businesses</span><span>${fmt(S.biz.reduce((a,x)=>a+x.value,0))}</span>${loans?`<span>Mortgages owed</span><span>-${fmt(loans)}</span>`:''}<span><b>Net worth</b></span><span><b>${fmt(netWorth())}</b></span></div>`);
+  if(S.assets.length){api.sec(`Owned (${S.assets.length})`);
+    S.assets.slice().sort((a,b)=>b.value-a.value).forEach(a=>api.item(esc(a.name),[(ATYPE[a.type]||{}).l||'Item',a.rented?'Rented out':'',a.loan?`Mortgage ${fmt(a.loan)}`:''].filter(Boolean).join(' · '),fmt(a.value),()=>assetDetail(a.id)))}
+  if(S.age<18){api.sub('You can buy things and bid at auctions when you turn 18.');return}
+  api.sec('Shopping');
+  api.item('Real estate','Homes from studios to private islands',null,houseShop);
+  api.item('Vehicles','Cars, motorcycles, boats and aircraft',null,()=>sheet('Vehicles',a=>['car','moto','boat','air'].forEach(k=>a.item(SHOP[k].title,`${SHOP[k].items.length} for sale`,null,()=>shop(k)))));
+  api.item('Luxury','Jewelry, watches and designer goods',null,()=>sheet('Luxury',a=>['jewel','watch','bag'].forEach(k=>a.item(SHOP[k].title,`${SHOP[k].items.length} for sale`,null,()=>shop(k)))));
+  api.item('Home & hobbies','Gadgets and gear that boost your stats',null,()=>shop('item'));
+  api.item('Art gallery','New works each year',null,gallery);
+  api.sec('Auctions');
+  api.item('Auction house','Bid on art, collectibles, classic cars and foreclosed homes',null,auctionHouse);
+  api.item('Storage unit auctions','Bid blind on abandoned units',null,storageAuctions);
+  api.item('Sell at auction','Put something you own under the hammer',null,sellAtAuction,!S.assets.length);
   api.sec('Investing');
-  api.item('Invest in an index fund','Moves with the market each year',null,()=>sheet('Invest',a=>{[1e3,1e4,1e5,1e6].forEach(v=>a.item(`Invest ${fmt(v)}`,'',null,act('',()=>{S.money-=v;S.invest+=v;L(`I invested ${fmt(v)}.`)}),S.money<v));a.item('Withdraw everything',fmt(S.invest),null,act('',()=>{S.money+=S.invest;L(`I withdrew ${fmt(S.invest)} from my investments.`);S.invest=0}),S.invest<=0)}));
+  api.item('Stock & crypto market','Nine tickers, prices move every year',null,marketMenu);
+  api.item('Index fund',`Balance ${fmt(S.invest)}`,null,()=>sheet('Index fund',a=>{[1e3,1e4,1e5,1e6].forEach(v=>a.item(`Invest ${fmt(v)}`,'',null,act('',()=>{S.money-=v;S.invest+=v;L(`I invested ${fmt(v)} in an index fund.`)}),S.money<v));a.item('Withdraw everything',fmt(S.invest),null,act('',()=>{S.money+=S.invest;L(`I withdrew ${fmt(S.invest)} from my index fund.`);S.invest=0}),S.invest<=0)}));
+});}
+function assetDetail(id){sheet('Asset',api=>{
+  const a=S.assets.find(x=>x.id===id);if(!a){api.sub('You no longer own this.');return}
+  stack[stack.length-1].title=a.name;
+  api.html(`<div class="kv"><span>Type</span><span>${(ATYPE[a.type]||{}).l||'Item'}</span><span>Current value</span><span>${fmt(a.value)}</span><span>Paid</span><span>${fmt(a.price||a.value)}</span>${a.loan?`<span>Mortgage left</span><span>${fmt(a.loan)}</span>`:''}${a.rented?`<span>Rent collected</span><span>${fmt(a.rentTotal||0)}</span>`:''}${a.fx?`<span>Yearly boost</span><span>${Object.entries(a.fx).map(([k,v])=>`+${v} ${k}`).join(', ')}</span>`:''}</div>`);
+  const net=Math.round(a.value-(a.loan||0));
+  api.item('Sell now',`Quick sale at about 92% of value${a.loan?', mortgage repaid':''}`,fmt(Math.round(a.value*0.92)-(a.loan||0)),act('',()=>{const v=Math.round(a.value*0.92)-(a.loan||0);S.money+=v;S.assets=S.assets.filter(x=>x!==a);L(`I sold my ${lc(a.name)} and cleared ${fmt(v)}.`)}));
+  api.item('Sell at auction','Could go well over value, or under. 10% fee.',null,()=>auctionSale(a.id));
+  if(a.type==='house'){
+    api.item(a.rented?'Stop renting it out':'Rent it out',a.rented?'Move back in or leave it empty':'Earn about 4–7% of its value each year',null,act('',()=>{a.rented=!a.rented;L(a.rented?`I started renting out my ${lc(a.name)}.`:`I stopped renting out my ${lc(a.name)}.`)}));
+    api.item('Renovate',`Costs ${fmt(Math.round(a.value*0.06))} · adds about 10% value`,null,act('',()=>{const c=Math.round(a.value*0.06);S.money-=c;a.value=Math.round(a.value*(1+R(6,14)/100));L(`I renovated my ${lc(a.name)}.`,'good');st('happy',3)}));
+    if(a.loan)api.item('Pay off mortgage',fmt(a.loan),null,act('',()=>{S.money-=a.loan;L(`I paid off the ${fmt(a.loan)} mortgage on my ${lc(a.name)}.`,'good');a.loan=0}),S.money<a.loan);
+    api.item('Throw a house party','$2,000',null,act('',()=>{S.money-=2000;st('happy',6);alive().forEach(p=>{if(p.rel==='Friend')p.bond=clamp(p.bond+5)});L(`I threw a party at my ${lc(a.name)}.`,'good')}));
+  }
+  if(['car','moto','boat','air','classic'].includes(a.type))api.item(a.type==='air'?'Take it for a flight':a.type==='boat'?'Take it out on the water':'Go for a drive','',null,act('',()=>{st('happy',R(3,7));if(C(.04)){st('health',-R(10,25));L(`I had an accident in my ${lc(a.name)}.`,'bad');a.value=Math.round(a.value*0.7)}else L(`I took my ${lc(a.name)} out for the day.`,'good')}));
+  if(['jewel','watch','bag','art','collect'].includes(a.type))api.item('Get it appraised','$500',null,act('',()=>{S.money-=500;L(`An appraiser valued my ${lc(a.name)} at ${fmt(a.value)}.`)}));
+  api.item('Give it away','To a family member or charity',null,act('',()=>{S.assets=S.assets.filter(x=>x!==a);S.karma=clamp(S.karma+5);const p=alive().filter(x=>x.rel!=='Ex');if(p.length&&C(.6)){const q=P(p);q.bond=clamp(q.bond+20);q.money+=net;L(`I gave my ${lc(a.name)} to ${q.name}.`,'good')}else L(`I donated my ${lc(a.name)} to charity.`,'good')}));
 });}
 function houseShop(){
-  if(S.flags.housesAge!==S.age){S.flags.housesAge=S.age;S.flags.houses=HOUSES.map((h,i)=>({n:h,p:Math.round((80e3*Math.pow(1.7,i))*(0.8+Math.random()*0.4)/1000)*1000,c:R(40,100)}))}
-  sheet('Real estate',api=>{S.flags.houses.forEach(h=>api.item(h.n,`Condition ${h.c}%`,fmt(h.p),act('',()=>buy('house',h.n,h.p)),S.money<h.p*0.2))});
+  if(S.flags.housesAge!==S.age){S.flags.housesAge=S.age;S.flags.houses=HOMES.slice().sort(()=>Math.random()-.5).slice(0,9).sort((a,b)=>a[1]-b[1]).map(([n,b])=>({n,hood:remote(n)?'':P(HOODS),p:Math.round(b*(0.8+Math.random()*0.45)/1000)*1000,beds:n.includes('Studio')?0:R(1,n.includes('ansion')||n.includes('castle')||n.includes('estate')?9:4),c:R(40,100)}))}
+  sheet('Real estate',api=>{
+    api.sub(`Listings refresh every year. With 20% down you can take a mortgage. You have ${fmt(S.money)}.`);
+    S.flags.houses.forEach(h=>api.item(`${h.n}${h.hood?' in '+h.hood:''}`,`${h.beds?h.beds+' bed · ':''}condition ${h.c}% · 20% down ${fmt(h.p*0.2)}`,fmt(h.p),()=>popup(h.n,`${h.n}${h.hood?' in '+h.hood:''}, listed at ${fmt(h.p)}. How do you want to pay?`,[
+      ['Pay cash',()=>{if(S.money<h.p){L(`I could not afford the ${lc(h.n)} outright.`,'bad');return}buy('house',h.n,h.p);S.flags.houses=S.flags.houses.filter(x=>x!==h)}],
+      [`Mortgage (${fmt(h.p*0.2)} down)`,()=>{if(S.money<h.p*0.2||(!S.job&&!S.biz.length&&S.money<h.p*0.5)){L(`The bank turned down my mortgage for the ${lc(h.n)}.`,'bad');return}buy('house',h.n,h.p,true);S.flags.houses=S.flags.houses.filter(x=>x!==h)}],
+      ['Make a lowball offer (85%)',()=>{if(C(.35)){if(S.money<h.p*0.85*0.2){L('My lowball offer was accepted but I could not cover the down payment.','bad');return}buy('house',h.n,Math.round(h.p*0.85),S.money<h.p*0.85);S.flags.houses=S.flags.houses.filter(x=>x!==h)}else L(`The seller rejected my lowball offer on the ${lc(h.n)}.`)}],
+      ['Keep looking',null]]),S.money<h.p*0.17));
+  });
 }
-function buy(type,name,price){
-  if(S.money>=price){S.money-=price;L(`I bought a ${name.toLowerCase()} for ${fmt(price)}.`,'good')}
-  else if(type==='house'){const down=Math.round(price*0.2);S.money-=price;L(`I bought a ${name.toLowerCase()} with a mortgage (${fmt(down)} down).`)}
-  else{L(`I could not afford the ${name.toLowerCase()}.`,'bad');return}
-  S.assets.push({id:uid(),type,name,value:price});st('happy',type==='house'?10:5);
+function shop(k){const d=SHOP[k];sheet(d.title,api=>{
+  api.sub(`You have ${fmt(S.money)}.`);
+  d.items.forEach(([n,p,fx])=>api.item(n,fx?Object.entries(fx).map(([s,v])=>`+${v} ${s} a year`).join(', '):(ATYPE[k]||{}).l,fmt(p),act('',()=>buy(k,n,p,false,fx)),S.money<p));
+});}
+function gallery(){
+  if(S.flags.galAge!==S.age){S.flags.galAge=S.age;S.flags.gal=[0,1,2,3,4,5].map(()=>({n:`“${P(ARTWORKS)}” by ${P(ARTISTS)}`,p:Math.round(Math.exp(7+Math.random()*6)/100)*100}))}
+  sheet('Art gallery',api=>{api.sub('Art is volatile. Some pieces soar, others fade.');S.flags.gal.forEach(w=>api.item(w.n,'Original work',fmt(w.p),act('',()=>{buy('art',w.n,w.p);S.flags.gal=S.flags.gal.filter(x=>x!==w)}),S.money<w.p))});
 }
+function buy(type,name,price,mortgage,fx){
+  if(mortgage){S.money-=Math.round(price*0.2);L(`I bought ${an(name)} ${lc(name)} for ${fmt(price)} with a mortgage.`,'good')}
+  else if(S.money>=price){S.money-=price;L(`I bought ${type==='art'?name:an(name)+' '+lc(name)} for ${fmt(price)}.`,'good')}
+  else{L(`I could not afford the ${name.toLowerCase()}.`,'bad');return false}
+  const a={id:uid(),type,name,value:price,price};if(mortgage)a.loan=Math.round(price*0.8);if(fx)a.fx=fx;
+  S.assets.push(a);st('happy',type==='house'?10:type==='item'?3:5);return a;
+}
+
+/* ---------- auctions ---------- */
+function makeLots(){
+  const lots=[];
+  for(let i=0;i<3;i++){const est=Math.round(Math.exp(9+Math.random()*5)/1000)*1000;lots.push({type:'art',name:`“${P(ARTWORKS)}” by ${P(ARTISTS)}`,est})}
+  COLLECTIBLES.slice().sort(()=>Math.random()-.5).slice(0,3).forEach(([n,b])=>lots.push({type:'collect',name:n,est:Math.round(b*(0.7+Math.random()*0.6)/100)*100}));
+  CLASSICS.slice().sort(()=>Math.random()-.5).slice(0,2).forEach(([n,b])=>lots.push({type:'classic',name:n,est:Math.round(b*(0.8+Math.random()*0.4)/1000)*1000}));
+  HOMES.slice(1,11).sort(()=>Math.random()-.5).slice(0,2).forEach(([n,b])=>lots.push({type:'house',name:`Foreclosed ${lc(n)}${remote(n)?'':' in '+P(HOODS)}`,est:Math.round(b*0.7/1000)*1000,real:b}));
+  return lots.map(l=>({...l,id:uid(),truth:Math.round((l.real||l.est)*(0.55+Math.random()*1.15))}));
+}
+function auctionHouse(){
+  if(S.flags.lotsAge!==S.age){S.flags.lotsAge=S.age;S.flags.lots=makeLots()}
+  sheet('Auction house',api=>{
+    api.sub('New lots every year. The estimate is a guess: the real value can be far higher or lower. Pay for an appraisal to get a better idea.');
+    if(!S.flags.lots.length)api.sub('Every lot has sold this year. Come back next year.');
+    const lab={art:'Fine art',collect:'Collectibles',classic:'Classic cars',house:'Foreclosures'};
+    Object.keys(lab).forEach(t=>{const ls=S.flags.lots.filter(l=>l.type===t);if(!ls.length)return;api.sec(lab[t]);
+      ls.forEach(l=>api.item(esc(l.name),`Estimate ${fmt(l.est*0.8)} – ${fmt(l.est*1.2)}`,null,()=>auctionRoom(l.id)))});
+  });
+}
+function auctionRoom(id){
+  const lot=S.flags.lots.find(l=>l.id===id);if(!lot)return;
+  const A={price:Math.round(lot.est*0.45/100)*100,leader:null,log:[`The auctioneer opens ${lot.type==='art'?lot.name:lc(lot.name)} at ${fmt(Math.round(lot.est*0.45/100)*100)}.`],done:false,
+    rivals:[0,1,2,3].slice(0,R(2,4)).map(i=>({paddle:R(11,240),max:Math.round(lot.truth*(0.55+Math.random()*0.65))})),appraised:false};
+  const can=v=>lot.type==='house'?S.money>=v*0.2:S.money>=v;
+  const finish=win=>{A.done=true;
+    if(win){S.flags.lots=S.flags.lots.filter(l=>l!==lot);
+      const a=buy(lot.type,lot.type==='house'?lot.name.replace('Foreclosed ',''):lot.name,A.price,lot.type==='house'&&S.money<A.price);
+      if(a){a.value=lot.truth;A.log.push(`Sold to you for ${fmt(A.price)}! Experts now value it at ${fmt(lot.truth)}.`);
+        L(lot.truth>=A.price?`It turned out to be worth ${fmt(lot.truth)}. A bargain!`:`Experts say it is only worth ${fmt(lot.truth)}. I overpaid.`,lot.truth>=A.price?'good':'bad')}}
+    else{const r=A.rivals.find(x=>x.paddle===A.leader);S.flags.lots=S.flags.lots.filter(l=>l!==lot);A.log.push(r?`Sold to paddle ${r.paddle} for ${fmt(A.price)}.`:'The lot went unsold.');L(`I dropped out of the auction for ${lot.name}.`)}
+    render();save();refresh()};
+  const rivalsRespond=()=>{
+    const live=A.rivals.filter(r=>r.max>A.price*1.04&&r.paddle!==A.leader).sort((a,b)=>b.max-a.max);
+    if(!live.length){A.log.push('Going once… going twice…');finish(A.leader==='you');return}
+    const r=live[0];const second=live[1]?live[1].max:A.price;
+    A.price=Math.min(r.max,Math.round(Math.max(A.price*(1.04+Math.random()*0.08),Math.min(second*1.03,r.max))/100)*100);A.leader=r.paddle;
+    A.log.push(`Paddle ${r.paddle} bids ${fmt(A.price)}.`);
+  };
+  const bid=pct=>{const v=Math.round(A.price*(1+pct)/100)*100;
+    if(!can(v)){A.log.push(`You can't cover a ${fmt(v)} bid.`);refresh();return}
+    A.price=v;A.leader='you';A.log.push(`You bid ${fmt(v)}.`);rivalsRespond();if(!A.done)refresh()};
+  sheet('Auction',api=>{
+    stack[stack.length-1].title='Lot: '+lot.name;
+    api.html(`<div class="kv"><span>Estimate</span><span>${fmt(lot.est*0.8)} – ${fmt(lot.est*1.2)}</span>${A.appraised?`<span>Your appraiser says</span><span>${fmt(A.appraised[0])} – ${fmt(A.appraised[1])}</span>`:''}<span>Current bid</span><span><b>${fmt(A.price)}</b></span><span>Leading</span><span>${A.leader==='you'?'You':A.leader?'Paddle '+A.leader:'No bids yet'}</span><span>Your cash</span><span>${fmt(S.money)}</span></div>
+      <div class="auclog">${A.log.slice(-5).map(t=>`<p>${esc(t)}</p>`).join('')}</div>`);
+    if(A.done){api.item('Back to the auction house','',null,()=>{stack.pop();stack.pop();auctionHouse()});return}
+    if(A.leader!=='you'){
+      api.item('Bid','Small raise of 5%',fmt(Math.round(A.price*1.05/100)*100),()=>bid(.05));
+      api.item('Raise firmly','Jump 15% to scare off rivals',fmt(Math.round(A.price*1.15/100)*100),()=>bid(.15));
+      api.item('Knock-out bid','Jump 40%',fmt(Math.round(A.price*1.4/100)*100),()=>bid(.4));
+    }
+    if(!A.appraised)api.item('Hire an appraiser',`Costs ${fmt(Math.max(200,Math.round(lot.est*0.02)))}`,null,()=>{S.money-=Math.max(200,Math.round(lot.est*0.02));const e=0.15;A.appraised=[Math.round(lot.truth*(1-e-Math.random()*0.1)),Math.round(lot.truth*(1+e+Math.random()*0.1))];A.log.push('Your appraiser whispers a number in your ear.');render();refresh()});
+    api.item('Walk away','Let the others have it',null,()=>finish(false));
+  });
+}
+function auctionSale(id){
+  const a=S.assets.find(x=>x.id===id);if(!a)return;
+  const vol=['art','collect','classic'].includes(a.type)?[0.6,1.9]:[0.75,1.3];
+  const price=Math.round(a.value*(vol[0]+Math.random()*(vol[1]-vol[0]))/100)*100;
+  const fee=Math.round(price*0.1),net=price-fee-(a.loan||0);
+  popup('Under the hammer',`Your ${lc(a.name)} sold for <b>${fmt(price)}</b> (valued at ${fmt(a.value)}). After the 10% auction fee${a.loan?' and paying off the mortgage':''} you receive ${fmt(net)}.`,[['Collect the money',()=>{
+    S.money+=net;S.assets=S.assets.filter(x=>x!==a);L(`I sold my ${lc(a.name)} at auction for ${fmt(price)}.`,price>=a.value?'good':'bad')}]]);
+}
+function sellAtAuction(){sheet('Sell at auction',api=>{
+  api.sub('Art, collectibles and classic cars swing the most. The auction house keeps 10%.');
+  S.assets.slice().sort((a,b)=>b.value-a.value).forEach(a=>api.item(esc(a.name),(ATYPE[a.type]||{}).l||'Item',fmt(a.value),()=>auctionSale(a.id)));
+});}
+function storageAuctions(){
+  if(S.flags.unitsAge!==S.age){S.flags.unitsAge=S.age;S.flags.units=[0,1,2,3].map(()=>({id:uid(),d:P(STORAGE),p:R(2,40)*50}))}
+  sheet('Storage unit auctions',api=>{
+    api.sub('You get one look through the door. Most units are junk. A few hide something special.');
+    if(!S.flags.units.length)api.sub('No more units this year.');
+    S.flags.units.forEach(u=>api.item(esc(u.d),'Opening bid',fmt(u.p),()=>{
+      const rival=Math.round(u.p*(1+Math.random()*2.5)/50)*50;
+      popup('Storage unit',`${u.d}. Bidding opens at ${fmt(u.p)}. How far will you go?`,[[`Bid up to ${fmt(u.p*2)}`,()=>won(u.p*2)],[`Bid up to ${fmt(u.p*4)}`,()=>won(u.p*4)],['Pass',()=>{S.flags.units=S.flags.units.filter(x=>x!==u)}]]);
+      function won(cap){S.flags.units=S.flags.units.filter(x=>x!==u);
+        if(rival>cap){L(`I was outbid on a storage unit (it went for ${fmt(rival)}).`);return}
+        const paid=Math.max(u.p,Math.min(cap,rival+50));if(S.money<paid){L('I could not cover my storage unit bid.','bad');return}S.money-=paid;
+        const r=Math.random();let val,what;
+        if(r<0.04){val=R(20,120)*1000;what=P(['a crate of vintage wine','a sealed collection of rare comic books','a classic motorcycle under the tarp','a safe with gold coins inside','an unsigned oil painting that turned out to be valuable'])}
+        else if(r<0.35){val=Math.round(paid*(1.3+Math.random()*2));what=P(['working power tools','antique furniture','boxes of collectible toys','a vintage stereo system','designer clothes'])}
+        else{val=Math.round(paid*(0.1+Math.random()*0.9));what=P(['old mattresses and broken lamps','tax records and garden gnomes','a treadmill and fifty board games','water-damaged books','an inflatable boat with a hole'])}
+        S.money+=val;L(`I won a storage unit for ${fmt(paid)}. Inside: ${what}. I sold it all for ${fmt(val)}.`,val>=paid?'good':'bad');
+        note('Unit opened',`Inside: ${what}. You sold everything for ${fmt(val)}. ${val>=paid?`Profit: ${fmt(val-paid)}.`:`Loss: ${fmt(paid-val)}.`}`);}
+    },S.money<u.p));
+  });
+}
+
+/* ---------- market ---------- */
+function marketMenu(){ensureMarket();sheet('Stock & crypto market',api=>{
+  api.sub(`Prices change once a year. Crypto can crash or skyrocket. You have ${fmt(S.money)}; holdings worth ${fmt(portValue())}.`);
+  [['Stocks',MARKET.filter(m=>!m.c)],['Crypto',MARKET.filter(m=>m.c)]].forEach(([t,list])=>{api.sec(t);
+    list.forEach(m=>{const pr=S.market[m.s],n=S.port[m.s]||0;
+      api.item(`${m.n} <span class="pill">${m.s}</span>`,n?`You own ${n.toLocaleString(undefined,{maximumFractionDigits:2})} · worth ${fmt(n*pr)}`:'Not held',pr<1?'$'+pr.toFixed(4):fmt(pr),()=>sheet(m.n,a=>{
+        const pr2=S.market[m.s],n2=S.port[m.s]||0;
+        a.html(`<div class="kv"><span>Price</span><span>${pr2<1?'$'+pr2.toFixed(4):fmt(pr2)}</span><span>Held</span><span>${n2.toLocaleString(undefined,{maximumFractionDigits:2})}</span><span>Value</span><span>${fmt(n2*pr2)}</span></div>`);
+        [1e3,1e4,1e5,1e6].forEach(v=>a.item(`Buy ${fmt(v)}`,'',null,()=>{S.money-=v;S.port[m.s]=(S.port[m.s]||0)+v/pr2;L(`I bought ${fmt(v)} of ${m.n}.`);render();refresh()},S.money<v));
+        a.item('Sell half','',fmt(n2*pr2/2),()=>{S.money+=Math.round(n2*pr2/2);S.port[m.s]=n2/2;L(`I sold half my ${m.n} for ${fmt(n2*pr2/2)}.`);render();refresh()},!n2);
+        a.item('Sell everything','',fmt(n2*pr2),()=>{S.money+=Math.round(n2*pr2);S.port[m.s]=0;L(`I sold all my ${m.n} for ${fmt(n2*pr2)}.`);render();refresh()},!n2);
+      }))})});
+});}
 
 /* ---------- people ---------- */
 function peopleMenu(){sheet('Relationships',api=>{
