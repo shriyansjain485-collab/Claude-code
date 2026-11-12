@@ -1186,7 +1186,7 @@ function careerMenu(){sheet('Career',api=>{
   if(S.age>=18&&!S.job){api.item('Job listings','Full-time openings this year',null,jobsMenu);
     if(!S.part)api.item('Part-time jobs','',null,()=>sheet('Part-time jobs',a=>PARTTIME.forEach(([t,p])=>a.item(t,'Fits around school',fmt(p)+'/yr',act('',()=>{S.part={title:t,pay:p};L(`I started working part-time as a ${t}.`)})))));
     api.item('Fame careers','Modeling, streaming, comedy, writing and more',null,fameMenu)}
-  if(S.age>=12&&!S.edu.school){api.sec('Special careers');api.item(S.sp?esc(spTitle()):'Special careers',S.sp?'Manage your career':'Sports, acting, music, politics, dealing',null,S.sp?spMenu:specialMenu,false,['star','gold'])}
+  if(S.age>=12){api.sec('Special careers');api.item(S.sp?esc(spTitle()):'Special careers',S.sp?'Manage your career':'Sports, acting, music, politics, dealing',null,S.sp?spMenu:specialMenu,false,['star','gold'])}
   if(S.age>=16){api.sec('Side hustles');api.item('Side hustles','Up to three a year, alongside anything else',`${3-(S.acts.gig||0)} left`,hustleMenu)}
   if(S.age>=18){api.sec('Business');api.item('My businesses',`${S.biz.length} owned`,null,bizMenu)}
 });}
@@ -2184,8 +2184,9 @@ const RACE_TEAMS=['Apex Velocity','Northline Racing','Scuderia Corvo','Blue Meri
 const raceSalary=s=>[0,0,60e3,150e3,1e6][s.tier]*(0.6+s.skill/80);
 SPX.race={
  entry:api=>api.item('Motor racing','Street races, karting, touring cars, Grand Prix',null,()=>sheet('Start racing',a=>{
-   a.item('Race go-karts','The legal way up. Ages 8+.',fmt(2000),act('',()=>{if(!spend(2000))return;startSp({kind:'race',tier:1,skill:clamp(S.stats.health/5+S.stats.smarts/5+R(5,25)),car:1,wins:0,season:0,titles:0},'I started racing go-karts.')},'close'),S.age<8||S.money<2000,['car','blue']);
-   a.item('Street racing','Fast money, police risk. Needs a car.',null,act('',()=>{if(!S.assets.some(x=>x.type==='car')){toast('You need a car to street race.');return}startSp({kind:'race',tier:0,skill:clamp(S.stats.health/5+S.stats.smarts/5+R(5,25)),car:1,wins:0,season:0,titles:0},'I started racing on the streets at night.')},'close'),S.age<16,['car','red'])}),!!S.sp||S.age<8,['car','red']),
+   if(S.edu.school&&S.edu.school.type==='uni')a.item('Join the university motorsport team','Free while you study. Counts as karting.',null,act('',()=>startSp({kind:'race',tier:1,skill:clamp(S.stats.health/5+S.stats.smarts/5+R(8,28)),car:1,wins:0,season:0,titles:0},'I joined the university motorsport team.'),'close'),false,['cap','blue']);
+   a.item('Race go-karts','The legal way up. A local club lends you a kart. Ages 8+.','Free',act('',()=>{startSp({kind:'race',tier:1,skill:clamp(S.stats.health/5+S.stats.smarts/5+R(5,25)),car:1,wins:0,season:0,titles:0},'I started racing go-karts.')},'close'),S.age<8,['car','blue']);
+   a.item('Street racing',S.assets.some(x=>x.type==='car')?'Fast money, police risk':'Needs a car of your own. Buy one in Assets.',null,act('',()=>{if(!S.assets.some(x=>x.type==='car')){toast('You need a car to street race.');return}startSp({kind:'race',tier:0,skill:clamp(S.stats.health/5+S.stats.smarts/5+R(5,25)),car:1,wins:0,season:0,titles:0},'I started racing on the streets at night.')},'close'),S.age<16||!S.assets.some(x=>x.type==='car'),['car','red'])}),!!S.sp||S.age<8,['car','red']),
  title:s=>RACE_TIERS[s.tier]+(s.titles?` · ${s.titles}× champion`:''),
  year:s=>{if(S.age<26)s.skill=clamp(s.skill+R(0,2));else if(S.age>36)s.skill=clamp(s.skill-R(1,4));
    if(s.tier>=2){const pay=Math.round(raceSalary(s)*0.7);S.money+=pay;if(s.season>=3&&C(.45)){s.titles++;S.fame=clamp(S.fame+5+s.tier*2);st('happy',15);L(`I won the ${['','','touring car','junior formula','Grand Prix'][s.tier]} championship!`,'good')}else if(s.season)L(`I won ${s.season} race${s.season>1?'s':''} this season.`,'good')}
