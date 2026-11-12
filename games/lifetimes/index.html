@@ -909,6 +909,23 @@ function deathScreen(){
     api.item('Start a brand new life','',null,()=>newLifeMenu(true));
   }}];draw();
 }
+function handOver(k){
+  const old=S;const cash=Math.max(0,Math.round(old.money));const par=old.g==='M'?'father':'mother';
+  const me={id:uid(),rel:old.g==='M'?'Father':'Mother',name:old.name,g:old.g,age:old.age,alive:true,bond:90,money:Math.min(0,Math.round(old.money)),job:null};
+  const people=[me];const pt=partner();if(pt)people.push({...pt,rel:pt.g==='M'?'Father':'Mother'});
+  old.people.filter(p=>['Son','Daughter'].includes(p.rel)&&p.alive&&p.id!==k.id).forEach(x=>people.push({...x,rel:x.rel==='Son'?'Brother':'Sister'}));
+  newLife({first:k.name.split(' ')[0],last:old.last,g:k.g,people,money:cash,gen:old.gen+1,country:old.country,year0:(old.year0||2026)+old.age-k.age,history:[...(old.history||[]),old.name]});
+  S.age=k.age;S.log=[{age:k.age,lines:[]}];
+  Object.assign(S,{assets:old.assets,biz:old.biz,invest:old.invest,port:old.port||{},market:old.market,inv2:old.inv2||null,zoo:old.zoo||null,museum:old.museum||null,pets:old.pets.filter(x=>x.alive)});
+  if(old.royal){S.royal={title:k.g==='M'?'Prince':'Princess',monarch:!!old.royal.monarch,pop:old.royal.pop};S.country=old.country}
+  if(k.age>=18){S.edu.level=1;S.edu.hsDone=1;S.edu.degrees=['High school diploma']}
+  S.stats.smarts=clamp((old.stats.smarts+R(10,90))/2);S.stats.looks=clamp((old.stats.looks+R(10,90))/2);
+  L(`My ${par}, ${old.name}, stepped away from it all to live quietly by the sea and handed everything to me.`,'good');
+  L(`I now have ${fmt(cash)} in cash${S.assets.length?`, ${S.assets.length} possession${S.assets.length>1?'s':''}`:''}${S.biz.length?`, ${S.biz.length} business${S.biz.length>1?'es':''}`:''}. My net worth is ${fmt(netWorth())}.`,'good');
+  if(S.royal&&S.royal.monarch)L(`My ${par} abdicated, and I am now ${k.g==='M'?'King':'Queen'} of ${S.country}.`,'good');
+  if(old.money<0)L(`My ${par} kept their own debts, so I start debt-free.`);
+  S.snaps=[];snap();save();close();toast(`You are now ${S.name}.`);
+}
 function continueAs(k){
   const old=S;const inherit=Math.round(netWorth()/Math.max(1,old.people.filter(p=>['Son','Daughter'].includes(p.rel)&&p.alive).length+(partner()?1:0)));
   const people=[];
@@ -1870,6 +1887,11 @@ function peopleMenu(){sheet('Relationships',api=>{
   groups.forEach(([g,f])=>{const ps=S.people.filter(f);if(!ps.length)return;api.sec(g);
     ps.forEach(p=>{const b=api.item(esc(p.name)+(p.alive?'':' <span class="pill bad">Deceased</span>'),`${p.rel} · age ${p.age}`,null,()=>personMenu(p.id),!p.alive);
       if(p.alive){const m=document.createElement('div');m.className='mini';m.innerHTML=`<i style="width:${p.bond}%;background:${p.bond>=60?'var(--good)':p.bond>=30?'var(--warn)':'var(--bad)'}"></i>`;b.querySelector('.t').appendChild(m)}})});
+  const heirs=kids();
+  if(heirs.length&&S.alive){api.sec('Pass it on');api.item('Give everything to a child','Retire quietly and keep playing as your child, with everything you own',null,()=>sheet('Choose your heir',x=>{
+    x.sub('They get all your cash, property, businesses, investments and pets. You step away and live on as their parent.');
+    heirs.forEach(k=>x.item(esc(k.name),`${k.rel}, age ${k.age}`,null,()=>popup('Pass the torch',`Hand all your money, property, businesses and investments to ${esc(k.name)}? You will retire to a quiet life by the sea, and you will keep playing as ${esc(fn1(k))}.`,[
+      [`Yes, give it all to ${fn1(k)}`,()=>then(()=>handOver(k))],['Not yet',null]]),false,['baby','orange']))}),false,['gift','gold'])}
   if(S.pets.length){api.sec('Pets');S.pets.forEach(p=>api.item(`${esc(p.name)}${p.alive?'':' <span class="pill bad">Deceased</span>'}`,`${p.kind} · age ${p.age}`,null,act('',()=>{if(!limit('pet'+p.id,1,`${p.name} is tired. Play again next year.`))return;st('happy',4);p.bond=clamp(p.bond+10);L(`I played with my ${p.kind} ${p.name}.`)}),!p.alive))}
   if(S.age>=16){api.sec('Meet people');
     api.item('Go on a date','Find a partner',null,datingMenu,!!partner());
@@ -1885,7 +1907,7 @@ function datingMenu(){
   });
 }
 function haveBaby(auto){
-  const g=C(.5)?'M':'F';const k=person(g==='M'?'Son':'Daughter',0,g,S.last);k.bond=95;k.money=0;S.people.push(k);
+  const g=C(.5)?'M':'F';const k=person(g==='M'?'Son':'Daughter',0,g,S.last);const taken=new Set([first(),...S.people.map(x=>x.name.split(' ')[0])]);for(let i=0;i<20&&taken.has(k.name.split(' ')[0]);i++)k.name=fname(g)+' '+S.last;k.bond=95;k.money=0;S.people.push(k);
   L(`${auto?'Surprise! ':''}I welcomed a baby ${g==='M'?'boy':'girl'}, ${k.name}.`,'good');st('happy',15);
 }
 function personMenu(id){const p=S.people.find(x=>x.id===id);sheet(p.name,api=>{
