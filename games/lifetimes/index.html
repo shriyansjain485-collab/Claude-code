@@ -510,7 +510,7 @@ const SHIRT=['#0E8C6E','#F0603F','#3B6FD8','#8E5CC9','#D9911A','#2A3B47'];
 function face(){
   let h=0;for(const ch of S.name)h=(h*31+ch.charCodeAt(0))>>>0;
   const lk=S.look||{skin:h%6,hair:(h>>3)%6,shirt:(h>>6)%6};
-  const a=S.age,baby=a<3,skin=SKIN[lk.skin];
+  const a=S.vampire?Math.min(S.age,30):S.age,baby=a<3,skin=S.vampire?'#E6E2EE':SKIN[lk.skin];
   const hair=a>=75?'#E6E6E1':a>=58?'#A7A9A6':HAIR[lk.hair];
   const shirt=S.jail>0?'#E8822A':SHIRT[lk.shirt];
   const hp=S.stats.happy;
@@ -625,6 +625,7 @@ function render(){
   if(S.royal&&!S.royal.overthrown)tags.push(`<span class="tag royal">Approval ${S.royal.pop}%</span>`);
   if(S.gang)tags.push(`<span class="tag bad">${GANG_RANKS[S.gang.rank]}</span>`);
   if(S.fame>=15)tags.push(`<span class="tag fame">Fame ${S.fame}%</span>`);
+  if(S.vampire)tags.push('<span class="tag bad">Vampire</span>');if(S.magic)tags.push('<span class="tag royal">Mage</span>');if(S.hero&&!S.hero.secret)tags.push(`<span class="tag royal">${esc(S.hero.alias)}</span>`);
   if(S.ill.length)tags.push(`<span class="tag bad">${esc(S.ill.map(i=>i.n).join(', '))}</span>`);
   $('#tags').innerHTML=tags.join('');
   $('#mn').textContent=fmt(S.money);$('#mn').classList.toggle('neg',S.money<0);
@@ -750,8 +751,8 @@ function ageUp(){
   eduYear();
   finances();
   // stats drift back toward a healthy baseline for your age
-  const a=S.age;
-  const base=a<45?86:Math.max(30,86-(a-45)*0.9);
+  const a=S.age,ea=S.vampire?Math.min(a,30):Math.max(0,a-(S.youth||0));
+  const base=ea<45?86:Math.max(30,86-(ea-45)*0.9);
   S.stats.health=clamp(S.stats.health+(base-S.stats.health)*0.16+R(-2,2));
   S.ill.forEach(i=>{st('health',-Math.round(i.h/(i.chronic?5:3)));if(i.hap)st('happy',-Math.round(i.hap/3))});
   S.ill=S.ill.filter(i=>{if(C(i.heal||0)){L(i.n.startsWith('a ')?`My ${i.n.slice(2)} healed.`:`My ${i.n} cleared up.`,'good');return false}return true});
@@ -759,10 +760,11 @@ function ageUp(){
   const mood=60+(pt?6:0)+(S.job?3:0)+(S.pets.some(x=>x.alive)?3:0)-(S.money<-20000?10:0)-(S.jail?18:0)-S.ill.length*4;
   S.stats.happy=clamp(S.stats.happy+(mood-S.stats.happy)*0.2+R(-3,3));
   if(a<23)st('smarts',R(0,2));else if(a>72&&C(.5))st('smarts',-1);
-  if(a>40&&C(.5))st('looks',-1);if(a>65&&C(.5))st('looks',-1);
+  if(!S.vampire){if(ea>40&&C(.5))st('looks',-1);if(ea>65&&C(.5))st('looks',-1)}else{st('happy',-1);if(C(.03)){st('health',-20);L('Vampire hunters tracked me down. I barely escaped.','bad')}}
   relativesYear();
   if(pt&&pt.bond<12&&C(.35))breakUp(pt,`${fn1(pt)} said they were not happy anymore and left me.`);
-  S.pets.forEach(p=>{p.age++;if(p.alive&&p.age>(p.kind==='tortoise'?60:p.kind==='parrot'?40:R(11,17))){p.alive=false;L(`My ${p.kind} ${p.name} died of old age.`,'bad');st('happy',-8)}});
+  S.pets.forEach(p=>{p.age++;if(p.alive&&p.kind==='mysterious egg'&&p.age>=2){p.kind='dragon';p.age=0;p.name=P(['Ember','Cinder','Saffron','Thistle','Obsidian','Pip','Marigold','Soot']);p.bond=80;st('happy',15);L(`My mysterious egg hatched into a baby dragon! I named it ${p.name}.`,'good')}
+    if(p.alive&&p.age>(p.kind==='dragon'?400:p.kind==='mysterious egg'?99:p.kind==='tortoise'?60:p.kind==='parrot'?40:R(11,17))){p.alive=false;L(`My ${p.kind} ${p.name} died of old age.`,'bad');st('happy',-8)}});
   if(S.royal){if(!S.royal.monarch){S.money+=S.age>=18?250e3:0}else S.money+=4e6;S.royal.pop=clamp(S.royal.pop+R(-4,2));
     if(S.royal.monarch&&S.royal.pop<15&&C(.35)){S.royal.monarch=false;S.royal.overthrown=true;L(`A revolution in ${S.country} removed me from the throne.`,'bad');S.money=Math.floor(S.money*0.4)}}
   if(S.gang&&S.jail===0){S.money+=[15e3,45e3,120e3,350e3,1.2e6][S.gang.rank];if(C(.05+S.gang.rank*.025)){arrest('The police raided a crew safe house and found my name in the ledgers.',R(3,12))}}
@@ -853,13 +855,13 @@ function relativesYear(){
   if(S.age%1===0){const pt=partner();if(pt&&pt.rel==='Spouse'&&S.age<45&&C(.07)&&S.flags.wantKids!==false){haveBaby(true)}}
 }
 function deathCheck(){
-  const a=S.age,h=S.stats.health;
+  const a=S.vampire?Math.min(S.age,30):Math.max(0,S.age-(S.youth||0)),h=S.stats.health;
   let p=a<1?.0015:a<18?.0003:a<30?.0007:a<45?.0013:a<55?.003:a<65?.006:a<75?.014:a<85?.042:a<95?.11:.28;
   p*=h>=70?0.75:h>=45?1:h>=25?1.5:2.6;if(h<=5)p+=.2;
   S.ill.forEach(i=>{if(i.h>=15)p+=i.h/1800});
   if(C(p)){
     const serious=S.ill.filter(i=>i.h>=12);const cause=serious.length&&C(.6)?P(serious).n:a>78?'old age':P(['a car crash','a heart attack','a stroke','a bad fall','a sudden illness']);
-    die(`I died of ${cause} at age ${a}.`);
+    die(`I died of ${cause} at age ${S.age}.`);
   }
 }
 function die(text){
@@ -868,6 +870,10 @@ function die(text){
 }
 function ribbon(){
   const nw=netWorth();const sp=S.sp||{};
+  if(S.vampire&&S.age>=120)return['Immortal','Outlived centuries.'];
+  if(S.hero&&(S.hero.wins||0)>=3)return['Superhero','Saved the city, again and again.'];
+  if(S.magic&&S.magic.xp>=90)return['Archmage','Mastered the arcane arts.'];
+  if((S.flags.visited||[]).length>=15)return['Globetrotter','Saw the whole world.'];
   if(sp.kind==='pol'&&sp.best>=5)return['Head of State','Led the nation.'];
   if(sp.kind==='sport'&&(sp.titles||0)>=3)return['Champion','A winner, again and again.'];
   if(sp.kind==='actor'&&(sp.awards||0)>=1)return['Award Winner','Took home the golden statue.'];
@@ -1890,12 +1896,255 @@ function personMenu(id){const p=S.people.find(x=>x.id===id);sheet(p.name,api=>{
 });}
 
 /* ---------- activities ---------- */
+/* ---------- more activities: hobbies, social life, competitions, travel, style, adulting, childhood, teen life, betting, the mysterious ---------- */
+const HOBBIES=[
+ {n:'Painting',st:'happy',min:4,c:50,d:'Canvas and color',m:['I sold my first painting at a street fair.','A gallery gave my paintings their own show!'],cash:[300,15e3]},
+ {n:'Photography',st:'happy',min:10,c:100,d:'Capture the world',m:['A magazine bought one of my photos.','My photos won an international award!'],cash:[500,20e3]},
+ {n:'Creative writing',st:'smarts',min:8,c:0,d:'Short stories and novels',m:['I finished writing my first novel.','My novel was published and became a bestseller!'],cash:[0,120e3]},
+ {n:'Poetry',st:'happy',min:8,c:0,d:'Words that sing',m:['A literary journal published my poem.','I was named poet of the year in my city.'],cash:[100,5e3]},
+ {n:'Cooking',st:'health',min:8,c:60,d:'From scrambled eggs to soufflés',m:['I cooked a five-course dinner for my friends.','I won a regional cooking championship!'],cash:[0,10e3]},
+ {n:'Baking',st:'happy',min:6,c:40,d:'Bread, cakes and pastries',m:['My cakes are the talk of the neighborhood.','I won first prize at the national bake-off!'],cash:[200,8e3]},
+ {n:'Gardening',st:'health',min:5,c:40,d:'Grow flowers and vegetables',m:['I grew a prize-winning pumpkin.','My garden was featured in a magazine.'],cash:[100,2e3]},
+ {n:'Knitting',st:'happy',min:8,c:30,d:'Scarves, sweaters and socks',m:['I knitted sweaters for my whole family.','I sell my knitwear online.'],cash:[0,6e3]},
+ {n:'Pottery',st:'happy',min:10,c:80,d:'Wheel, clay and kiln',m:['I made my own set of dishes.','My pottery sells out at craft fairs.'],cash:[0,8e3]},
+ {n:'Woodworking',st:'smarts',min:12,c:120,d:'Build furniture by hand',m:['I built my own dining table.','People commission custom furniture from me.'],cash:[0,15e3]},
+ {n:'Chess',st:'smarts',min:5,c:0,d:'Openings, tactics, endgames',m:['I earned an official chess rating.','I became a chess master!'],cash:[0,5e3]},
+ {n:'Coding',st:'smarts',min:9,c:0,d:'Build apps and websites',m:['I built my first website.','An app I built on the side made real money.'],cash:[0,40e3]},
+ {n:'Learning a new language',st:'smarts',min:5,c:60,d:'Vocabulary, grammar, conversation',m:['I can hold a basic conversation in a new language.','I am now fluent in a second language.'],cash:[0,0]},
+ {n:'Singing',st:'happy',min:4,c:40,d:'Lessons and practice',m:['I got a solo in the community choir.','I sang the anthem at a big game!'],cash:[0,3e3]},
+ {n:'Dancing',st:'health',min:4,c:50,d:'Salsa, ballet, hip-hop',m:['I performed in a dance recital.','I won a national dance competition!'],cash:[0,10e3]},
+ {n:'Martial arts',st:'health',min:5,c:60,d:'Discipline and belts',m:['I earned my green belt.','I earned my black belt!'],cash:[0,0]},
+ {n:'Rock climbing',st:'health',min:10,c:70,d:'Walls, ropes and cliffs',m:['I climbed my first outdoor route.','I climbed a famous big-wall route!'],cash:[0,0]},
+ {n:'Skateboarding',st:'health',min:8,c:80,d:'Ollies, kickflips and bruises',m:['I landed my first kickflip.','A skate brand gave me a sponsorship.'],cash:[0,8e3],risk:.08},
+ {n:'Surfing',st:'health',min:10,c:100,d:'Chase the perfect wave',m:['I caught my first real wave.','I placed in a surf competition!'],cash:[0,5e3]},
+ {n:'Fishing',st:'happy',min:5,c:40,d:'Patience by the water',m:['I caught a huge bass.','I won a fishing tournament!'],cash:[0,4e3]},
+ {n:'Hiking',st:'health',min:6,c:0,d:'Trails and summits',m:['I hiked to a mountain summit.','I completed a famous long-distance trail!'],cash:[0,0]},
+ {n:'Birdwatching',st:'happy',min:6,c:20,d:'Binoculars and patience',m:['I have spotted 100 bird species.','I discovered a rare bird nesting nearby!'],cash:[0,0]},
+ {n:'Astronomy',st:'smarts',min:8,c:60,d:'Stars, planets and comets',m:['I photographed the rings of a planet.','I discovered a new comet, and it bears my name!'],cash:[0,0]},
+ {n:'Magic tricks',st:'happy',min:6,c:30,d:'Sleight of hand',m:['I amazed everyone at a family party.','I perform magic shows on weekends.'],cash:[0,6e3]},
+ {n:'Stand-up comedy',st:'happy',min:15,c:0,d:'Open mics and tough crowds',m:['I got my first big laugh at an open mic.','A comedy club booked me as a headliner!'],cash:[0,10e3]},
+ {n:'Video games',st:'happy',min:5,c:60,d:'Ranked matches and speedruns',m:['I reached the top ranks in my favorite game.','I placed in a pro gaming tournament!'],cash:[0,15e3]},
+ {n:'Stamp collecting',st:'smarts',min:7,c:30,d:'Tiny pieces of history',m:['My stamp collection fills three albums.','I found an ultra-rare misprinted stamp!'],cash:[0,25e3]},
+ {n:'Calligraphy',st:'smarts',min:8,c:40,d:'Beautiful lettering',m:['I hand-lettered wedding invitations for a friend.','People pay me to letter their invitations.'],cash:[0,4e3]},
+ {n:'Juggling',st:'happy',min:6,c:10,d:'Balls, clubs, then fire',m:['I can juggle five balls.','I juggled fire at a street festival!'],cash:[0,500]},
+];
+const LANGS=['Spanish','French','Japanese','Mandarin','German','Italian','Korean','Arabic','Portuguese','Hindi','Swahili','Russian'];
+function hobbyMenu(){sheet('Hobbies',api=>{
+  api.sub('Practice up to twice a year each. Get good enough and something special happens.');
+  const mine=HOBBIES.filter(h=>(S.hob||{})[h.n]);if(mine.length){api.sec('Your hobbies');mine.forEach(h=>hobbyItem(api,h))}
+  api.sec(mine.length?'Try something new':'Pick a hobby');HOBBIES.filter(h=>!(S.hob||{})[h.n]).forEach(h=>hobbyItem(api,h));
+});}
+function hobbyItem(api,h){const lv=(S.hob||{})[h.n]||0;
+  api.item(h.n+(lv>=100?' <span class="pill">Mastered</span>':''),`${h.d}${lv?` · skill ${lv}%`:''}`,h.c?fmt(h.c):'Free',act('',()=>{
+    if(lv>=100){toast(`You have mastered ${lc(h.n)}. There is nothing left to learn.`);return}
+    if(!limit('hob'+h.n,2,`You have practiced ${lc(h.n)} enough this year.`))return;if(h.c&&!spend(h.c))return;
+    S.hob=S.hob||{};const before=lv,now=clamp(lv+R(5,11)-(lv>70?3:0));S.hob[h.n]=now;st(h.st,R(1,3));st('happy',1);
+    if(h.risk&&C(h.risk)){st('health',-8);L(`I hurt myself ${lc(h.n)}.`,'bad');return}
+    if(before<50&&now>=50){S.money+=h.cash[0];L(h.n==='Learning a new language'?`I can now hold a conversation in ${S.flags.lang=S.flags.lang||P(LANGS)}.`:h.m[0],'good');st('happy',5)}
+    else if(before<100&&now>=100){S.money+=h.cash[1];S.fame=clamp(S.fame+3);L(h.n==='Learning a new language'?`I am now fluent in ${S.flags.lang||P(LANGS)}!`:h.m[1],'good');st('happy',10)}
+    else L(before?`I practiced ${lc(h.n)}. Skill: ${now}%.`:`I took up ${lc(h.n)}.`)}),S.age<h.min||S.money<h.c,['star','teal']);
+}
+/* simple one-shot activities: [label, sub, minAge, maxAge, cost, perYear, fn, icon] */
+const doIt=(api,[l,sub2,mn,mx,c,n,fn,ic])=>{if(S.age<mn||S.age>mx)return;api.item(l,sub2,c?fmt(c):null,act('',()=>{if(!limit('x'+l,n||1,'That is enough of that for this year.'))return;if(c&&!spend(c))return;fn()}),S.money<c,ic)};
+const meet=(where)=>{const g=S.flags.pref||(he()?'F':'M');const p=person('Partner',clamp(S.age+R(-4,4),18,99),g);S.people.push(p);L(`I met ${p.name} ${where} and we started dating.`,'good');st('happy',10)};
+const newFriend=(where)=>{const f=person('Friend',clamp(S.age+R(-4,4),5,99),C(.5)?'M':'F');f.bond=R(55,75);S.people.push(f);L(`I made a new friend, ${f.name}, ${where}.`,'good')};
+const friends=()=>alive('Friend');
+const SOCIAL=[
+ ['Go to a party','Who knows who you will meet',14,90,0,2,()=>{const r=Math.random();if(r<.2&&!partner()&&S.age>=18)meet('at a party');else if(r<.45)newFriend('at a party');else if(r<.6){st('health',-2);L('I partied too hard and woke up with a terrible headache.','bad')}else{st('happy',5);L('I had a great time at a party.','good')}},['cake','pink']],
+ ['Go clubbing','Dance until sunrise',18,60,80,1,()=>{st('happy',6);if(!partner()&&C(.2))meet('at a club');else L('I danced all night at a club.','good')},['music','purple']],
+ ['Karaoke night','Belt out a power ballad',12,95,30,1,()=>{const sk=(S.hob||{}).Singing||0;if(C(.05+sk/400)){S.followers+=R(5e3,50e3);S.fame=clamp(S.fame+3);L('A video of my karaoke performance went viral!','good')}else{st('happy',5);L(sk>50?'I nailed my karaoke song.':'I sang karaoke terribly and loved every second.','good')}},['music','pink']],
+ ['Host a dinner party','Cook for your favorite people',20,95,300,1,()=>{friends().forEach(f=>f.bond=clamp(f.bond+8));const p=partner();if(p)p.bond=clamp(p.bond+5);st('happy',6);L('I hosted a dinner party for my friends.','good')},['cake','orange']],
+ ['Game night','Board games and snacks',8,100,20,2,()=>{friends().forEach(f=>f.bond=clamp(f.bond+4));st('happy',4);L(P(['I won game night!','I lost every round of game night, but it was fun.','Game night got very competitive.']),'good')},['dice','purple']],
+ ['Speed dating','Ten dates, five minutes each',18,80,40,1,()=>{if(partner()){toast('You are already in a relationship.');return}if(C(.35+S.stats.looks/300))meet('at speed dating');else{st('happy',-2);L('Speed dating was a bust.')}},['heart','pink']],
+ ['Go on a blind date','A friend set you up',18,85,60,1,()=>{if(partner()){toast('You are already in a relationship.');return}const r=Math.random();if(r<.35)meet('on a blind date');else if(r<.7)L('My blind date was nice, but there was no spark.');else{st('happy',-3);L('My blind date was a disaster.','bad')}},['heart','pink']],
+ ['Go to the movies','Popcorn and a blockbuster',4,100,15,2,()=>{st('happy',3);L(`I saw ${P(['an action movie','a romantic comedy','a horror movie','an animated film','a space epic','a documentary'])} at the movies.`)},['camera','blue']],
+ ['Picnic in the park','Sun, sandwiches, frisbee',3,100,20,1,()=>{st('happy',4);st('health',1);L('I had a lovely picnic in the park.','good')},['smile','green']],
+ ['Beach day','Sand, sun and waves',3,100,10,1,()=>{st('happy',5);if(C(.1)){st('looks',-1);L('I got a nasty sunburn at the beach.','bad')}else L('I spent a perfect day at the beach.','good')},['boat','teal']],
+ ['Road trip with friends','Open road, bad snacks, great playlist',17,80,400,1,()=>{friends().forEach(f=>f.bond=clamp(f.bond+10));st('happy',8);L('I went on a road trip with my friends.','good')},['car','orange']],
+ ['Fun outing','Bowling, go-karts, laser tag and more',6,90,40,2,()=>{const o=P(['went bowling','raced go-karts','played laser tag','played paintball','went ice skating','played mini golf','spent the day at an arcade','tried an escape room','went to a trampoline park']);st('happy',4);L(`I ${o}.`,'good')},['smile','orange']],
+ ['Visit a museum','Art, history or science',5,100,20,1,()=>{st('smarts',2);L(`I spent the afternoon at ${P(['an art museum','a natural history museum','a science center','a history museum','an aquarium','a planetarium'])}.`)},['book','blue']],
+ ['Go to a live sports game','Cheer with the crowd',4,100,80,1,()=>{st('happy',5);if(C(.05))L('I caught a ball in the stands!','good');else L('I cheered my lungs out at a game.')},['dumbbell','blue']],
+ ['Attend a music festival','Three days, five stages',16,70,250,1,()=>{st('happy',8);if(!partner()&&C(.12))meet('at a music festival');else L('I went to a three-day music festival.','good')},['music','purple']],
+ ['Join a book club','Monthly reads and debates',14,100,0,1,()=>{st('smarts',2);if(C(.4))newFriend('at book club');else L('I joined a book club.')},['book','teal']],
+ ['Volunteer at an animal shelter','Walk dogs, cuddle cats',10,95,0,1,()=>{kar(4);st('happy',4);L('I volunteered at an animal shelter.','good')},['paw','orange']],
+ ['Donate blood','It saves lives',17,75,0,1,()=>{kar(5);st('health',-1);L('I donated blood.','good')},['heart','red']],
+ ['Call an old friend','Catch up on everything',10,110,0,1,()=>{const f=P(friends());if(f){f.bond=clamp(f.bond+12);L(`I called my old friend ${f.name} and we talked for hours.`,'good')}else newFriend('through an old classmate')},['chat','blue']],
+];
+const COMPS=[
+ ['Spelling bee','Spell it right or go home',7,14,0,()=>S.stats.smarts,60,0],
+ ['Science olympiad','Team science challenges',12,18,0,()=>S.stats.smarts,500,1],
+ ['Talent show','Show off your best skill',6,90,0,()=>Math.max(...Object.values(S.hob||{a:20}),20),1e3,2],
+ ['Beauty pageant','Sash, crown and a talent round',16,35,300,()=>S.stats.looks,25e3,5],
+ ['Trivia night','Know a little about everything',16,100,20,()=>S.stats.smarts,500,0],
+ ['Chess tournament','Needs some chess skill',8,100,50,()=>(S.hob||{}).Chess||0,5e3,2],
+ ['Cooking competition','Impress the judges',14,90,100,()=>(S.hob||{}).Cooking||(S.hob||{}).Baking||0,8e3,2],
+ ['Dance-off','Battle on the dance floor',10,70,0,()=>(S.hob||{}).Dancing||0,2e3,1],
+ ['Gaming tournament','Bring your best reflexes',10,45,50,()=>(S.hob||{})['Video games']||0,20e3,2],
+ ['Hot dog eating contest','Stomach of steel required',18,70,20,()=>S.stats.health/1.3,5e3,2],
+ ['Arm wrestling contest','Pure strength',16,70,20,()=>S.stats.health,1e3,1],
+ ['Amateur boxing match','Gloves on. Risky.',18,45,100,()=>S.stats.health*.6+((S.hob||{})['Martial arts']||0)*.4,3e3,1],
+ ['Bodybuilding show','Months of training on display',18,60,200,()=>S.stats.health*.7+S.stats.looks*.3,10e3,2],
+ ['Poker tournament','$500 buy-in, big prize pool',18,100,500,()=>S.stats.smarts*.5+R(0,50),25e3,1],
+ ['Marathon race','Hit the finish line first',16,75,80,()=>S.stats.health*.8+((S.hob||{}).Hiking||0)*.2,5e3,1],
+];
+function compMenu(){sheet('Competitions',api=>{
+  api.sub('One try per competition each year. Your stats and hobby skills decide how well you do.');
+  COMPS.forEach(([n,d,mn,mx,fee,score,prize,fame])=>{if(S.age<mn||S.age>mx)return;
+    api.item(n,d+(prize?` · prize ${fmt(prize)}`:''),fee?fmt(fee):'Free',act('',()=>{if(!limit('comp'+n,1,'You already competed in that this year.'))return;if(fee&&!spend(fee))return;
+      const sc=score()+R(-15,25);
+      if(sc>88){S.money+=prize;S.fame=clamp(S.fame+fame+1);st('happy',12);L(`I won the ${lc(n)}${prize?` and ${fmt(prize)}`:''}!`,'good')}
+      else if(sc>65){S.money+=Math.round(prize*0.2);st('happy',4);L(`I placed in the top three at the ${lc(n)}.`,'good')}
+      else{st('happy',-3);if(n.includes('boxing')&&C(.4)){st('health',-12);L('I got knocked out in an amateur boxing match.','bad')}else if(n.includes('Hot dog')&&C(.4)){st('health',-5);L('I made myself sick at a hot dog eating contest.','bad')}else L(`I did not place at the ${lc(n)}.`)}}),S.money<fee,iconFor(n)||['star','gold'])});
+});}
+const PLACES=[['Tokyo',2400],['Paris',1900],['Rome',1700],['New York',1500],['Bali',2000],['Reykjavik',2200],['Cairo',1600],['Rio de Janeiro',1800],['Cape Town',2300],['Sydney',2800],['Machu Picchu',2600],['Kyoto',2400],['Santorini',2100],['Marrakech',1500],['Banff',1700],['the Maldives',5000],['Hawaii',2500],['Bangkok',1400],['Istanbul',1500],['Antarctica',14000],['the Swiss Alps',3200],['Patagonia',3500],['Petra',1900],['the Serengeti',6000],['Venice',2000]];
+function travelMenu(){sheet('Travel',api=>{
+  const been=S.flags.visited||[];api.sub(`You have been to ${been.length} of ${PLACES.length} places. Up to two trips a year.`);
+  PLACES.forEach(([pl,c])=>api.item(pl+(been.includes(pl)?' <span class="pill">Visited</span>':''),'',fmt(c),act('',()=>{if(!limit('trip',2,'You have used up your vacation days this year.'))return;if(!spend(c))return;
+    const first=!been.includes(pl);if(first){S.flags.visited=[...been,pl]}st('happy',first?12:7);
+    const r=Math.random();
+    if(r<.1&&!partner()&&S.age>=18)meet(`while traveling in ${pl}`);
+    else if(r<.2){st('health',-6);L(`I got food poisoning in ${pl}.`,'bad')}
+    else if(r<.28){L(`The airline lost my luggage on the way to ${pl}.`,'bad');st('happy',-4)}
+    else if(r<.38){S.followers+=R(500,20e3);L(`My photos from ${pl} blew up online.`,'good')}
+    else if(r<.45){const v=R(100,800);S.money-=v;L(`I got scammed out of ${fmt(v)} in ${pl}.`,'bad')}
+    else if(r<.6){st('smarts',3);L(`I fell in love with the history and culture of ${pl}.`,'good')}
+    else L(`I took a trip to ${pl}.`,'good');
+    if(first&&S.flags.visited.length===10)L('I have now visited 10 places around the world!','good')}),S.money<c,['plane','blue']));
+});}
+const STYLE=[
+ ['Get a haircut','Fresh and tidy',3,110,40,1,()=>{st('looks',1);L('I got a fresh haircut.')},['star','teal']],
+ ['Try a bold new hairstyle','Turn heads',12,90,150,1,()=>{if(C(.65)){st('looks',3);L(`I got ${P(['a sharp undercut','long curtain bangs','a buzz cut','box braids','a sleek bob','a mullet, and somehow it works'])}. I love it.`,'good')}else{st('looks',-2);st('happy',-3);L('My new hairstyle was a mistake.','bad')}},['star','pink']],
+ ['Dye your hair','Any color you want',12,95,80,1,()=>{const c=P(['platinum blonde','fire-engine red','pastel pink','electric blue','jet black','silver','emerald green']);st('happy',3);L(`I dyed my hair ${c}.`)},['brush','pink']],
+ ['Get a tattoo','Permanent, choose wisely',18,90,250,2,()=>{const t=P(['a small star','a dragon on my back','my pet’s name','a sleeve of flowers','a compass','a tiny heart','a quote in another language']);if(C(.8)){st('happy',4);L(`I got a tattoo of ${t}.`,'good')}else{st('happy',-5);L(`I got a tattoo of ${t}. I already regret it.`,'bad')}},['brush','purple']],
+ ['Get a piercing','Ears, nose or eyebrow',14,80,60,1,()=>{st('looks',1);L(`I got my ${P(['ears','nose','eyebrow','lip','helix'])} pierced.`)},['gem','pink']],
+ ['Teeth whitening','A brighter smile',16,100,400,1,()=>{st('looks',2);L('I got my teeth whitened.','good')},['smile','teal']],
+ ['Start a skincare routine','Cleanse, tone, moisturize',12,110,120,1,()=>{st('looks',2);L('I started a proper skincare routine.')},['smile','pink']],
+ ['Hire a personal stylist','A whole new wardrobe',18,100,2000,1,()=>{st('looks',5);st('happy',4);L('A personal stylist gave me a complete makeover.','good')},['bag','pink']],
+ ['Get braces','Straighter teeth in a few years',10,40,3000,1,()=>{if(S.flags.braces){toast('You already had braces.');return}S.flags.braces=1;st('looks',4);st('happy',-2);L('I got braces.')},['smile','blue']],
+ ['Start a diet','Eat clean for a year',14,100,0,1,()=>{if(C(.6)){st('health',4);st('looks',2);L('I stuck to my diet and feel great.','good')}else{st('happy',-3);L('I gave up on my diet after two weeks.')}},['heart','green']],
+ ['Go to therapy','Talk it through',12,110,150,1,()=>{st('happy',R(4,10));const d=S.ill.find(i=>i.n==='depression');if(d&&C(.5)){S.ill=S.ill.filter(i=>i!==d);L('Therapy helped me overcome my depression.','good')}else L('I went to therapy. It helped.','good')},['chat','teal']],
+ ['Digital detox','A month without your phone',12,100,0,1,()=>{st('happy',5);st('smarts',1);L('I went a whole month without my phone.','good')},['clock','teal']],
+ ['Keep a journal','Write down your thoughts',8,110,0,1,()=>{st('happy',2);st('smarts',1);L('I started keeping a journal.')},['book','blue']],
+];
+const ADULT=[
+ ['Get a driver’s license','Freedom on four wheels',16,90,100,1,()=>{if(S.flags.license){toast('You already have a license.');return}if(S.stats.smarts+R(0,60)>50){S.flags.license=1;L('I got my driver’s license!','good')}else L('I failed the driving test.','bad')},['car','blue']],
+ ['File your taxes','Maybe a refund?',18,110,0,1,()=>{const r=Math.random();if(r<.5){const v=R(2,20)*100;S.money+=v;L(`I got a ${fmt(v)} tax refund.`,'good')}else if(r<.85)L('I filed my taxes. Nothing owed, nothing back.');else{const v=R(5,30)*100;S.money-=v;L(`I owed ${fmt(v)} in taxes.`,'bad')}},['coin','gold']],
+ ['Write a will','Decide who gets what',18,110,300,1,()=>{S.flags.will=1;st('happy',1);L('I wrote my will.')},['book','blue']],
+ ['Visit a place of worship','Reflection and community',5,110,0,1,()=>{st('happy',3);kar(2);if(C(.2))newFriend('at a place of worship');else L('I spent a quiet morning at a place of worship.')},['star','gold']],
+ ['Take a community class','First aid, pottery, budgeting',16,100,80,1,()=>{st('smarts',3);L(`I took a community class in ${P(['first aid','personal finance','public speaking','car repair','sign language','self-defense'])}.`)},['cap','blue']],
+ ['Join a protest','Stand up for what you believe',16,90,0,1,()=>{kar(3);if(C(.05)){S.record++;L('I was arrested at a protest and got a citation.','bad')}else L(`I marched for ${P(['climate action','workers’ rights','animal welfare','affordable housing','education funding'])}.`,'good')},['users','red']],
+ ['Sue someone in small claims court','Get back what you are owed',18,100,200,1,()=>{if(C(.5)){const v=R(5,50)*100;S.money+=v;L(`I won a small claims case and got ${fmt(v)}.`,'good')}else L('I lost my small claims case.','bad')},['book','red']],
+ ['Plan a garage sale','Clear out the clutter',16,100,0,1,()=>{const v=R(50,800);S.money+=v;L(`My garage sale made ${fmt(v)}.`,'good')},['coin','green']],
+ ['Go thrift shopping','Treasure among the junk',12,100,40,2,()=>{if(C(.04)){const v=R(5,50)*1000;S.money+=v;L(`I found a rare vintage item at a thrift store and resold it for ${fmt(v)}!`,'good')}else{st('happy',2);L('I found some great clothes at a thrift store.')}},['bag','orange']],
+ ['Take a nap','Just twenty minutes',1,120,0,2,()=>{st('happy',2);st('health',1);L('I took a well-earned nap.')},['clock','purple']],
+];
+const KIDS=[
+ ['Play pretend','Pirates, dragons, astronauts',2,10,0,2,()=>{st('happy',3);st('smarts',1);L(`I played pretend that I was ${P(['a pirate captain','an astronaut','a dragon tamer','a famous chef','a secret agent','a dinosaur'])}.`)},['star','orange']],
+ ['Build a pillow fort','The greatest fort ever built',3,11,0,1,()=>{st('happy',4);L('I built an enormous pillow fort.','good')},['home','orange']],
+ ['Watch cartoons','Saturday morning tradition',2,12,0,2,()=>{st('happy',3);L('I watched cartoons all morning.')},['camera','blue']],
+ ['Collect bugs','Beetles, butterflies, worms',4,12,0,1,()=>{st('smarts',2);L(P(['I found a giant beetle in the backyard.','I caught a butterfly and let it go.','My bug collection is growing.']))},['paw','green']],
+ ['Run a lemonade stand','Fifty cents a cup',5,12,5,1,()=>{const v=R(5,60);S.money+=v;L(`My lemonade stand made ${fmt(v)}.`,'good')},['coin','gold']],
+ ['Draw on the walls','Art is art',2,7,0,1,()=>{parents().forEach(p=>p.bond=clamp(p.bond-5));st('happy',4);L('I drew a mural on the living room wall. My parents were not impressed.','bad')},['brush','purple']],
+ ['Ask for allowance','Chores for cash',5,15,0,1,()=>{const p=P(parents());if(p&&C(p.bond/120)){const v=R(5,40);S.money+=v;L(`My ${p.rel.toLowerCase()} gave me ${fmt(v)} in allowance.`,'good')}else L('My parents said no allowance this week.')},['coin','gold']],
+ ['Climb a tree','Higher, higher...',4,13,0,1,()=>{if(C(.12)){st('health',-6);if(!S.ill.some(i=>i.n==='a broken arm'))S.ill.push({...ILL.find(i=>i.n==='a broken arm')});L('I fell out of a tree and broke my arm.','bad')}else{st('happy',4);st('health',1);L('I climbed to the top of the tallest tree.','good')}},['dumbbell','green']],
+ ['Have a sleepover','Snacks and scary stories',6,14,0,1,()=>{st('happy',5);if(C(.4))newFriend('at a sleepover');else L('I had a sleepover with friends.','good')},['users','pink']],
+ ['Play hide-and-seek','Nobody will ever find you',3,11,0,1,()=>{st('happy',3);L(P(['I won hide-and-seek by hiding in the dryer.','I hid so well everyone forgot about me.','I was found in five seconds.']))},['smile','teal']],
+ ['Throw a tantrum','Sometimes you just need to',2,9,0,1,()=>{parents().forEach(p=>p.bond=clamp(p.bond-3));st('happy',2);L('I threw an epic tantrum in the grocery store.','bad')},['alert','red']],
+];
+const TEENS=[
+ ['Sneak out at night','Freedom! Unless you get caught.',13,17,0,1,()=>{if(C(.35)){parents().forEach(p=>p.bond=clamp(p.bond-10));L('I snuck out and got caught. I am grounded for a month.','bad')}else{st('happy',6);L('I snuck out to meet friends and got away with it.','good')}},['lock','purple']],
+ ['Throw a party while your parents are away','Legendary or disastrous',14,17,50,1,()=>{if(C(.4)){parents().forEach(p=>p.bond=clamp(p.bond-15));L('My party got out of hand and my parents found out.','bad')}else{st('happy',8);S.fame=clamp(S.fame+1);L('I threw the party of the year.','good')}},['cake','pink']],
+ ['Start a band','Garage rock forever',12,17,0,1,()=>{st('happy',5);L(`I started a band called ${P(['The Paper Kites','Static Lemon','Midnight Snack','The Lost Socks','Velvet Thunder','No Homework'])}.`,'good');S.hob=S.hob||{};S.hob.Singing=Math.max(S.hob.Singing||0,10)},['music','purple']],
+ ['Join a school club','Debate, drama, robotics, council',11,17,0,1,()=>{const c=P(['debate club','drama club','robotics club','student council','yearbook committee','chess club','environmental club']);st('smarts',2);st('happy',2);L(`I joined the ${c}.`,'good')},['users','blue']],
+ ['Run for class president','Speeches and posters',13,17,0,1,()=>{if(C(.3+S.stats.looks/300+S.stats.smarts/400)){st('happy',10);L('I was elected class president!','good')}else{st('happy',-4);L('I lost the class president election.','bad')}},['crown','gold']],
+ ['Prank a teacher','Harmless fun, probably',12,17,0,1,()=>{if(C(.4)){S.edu.grades=clamp(S.edu.grades-5);L('My prank backfired and I got detention.','bad')}else{st('happy',5);L('My prank on a teacher became school legend.','good')}},['smile','orange']],
+ ['Cram for entrance exams','Long nights with flashcards',15,18,0,1,()=>{st('smarts',3);S.edu.grades=clamp(S.edu.grades+6);st('happy',-2);L('I crammed for my entrance exams.')},['cap','blue']],
+ ['Learn to drive','Practice with a parent',15,17,0,1,()=>{st('happy',2);L(C(.2)?'I backed into the mailbox while learning to drive.':'I practiced driving around the neighborhood.')},['car','blue']],
+];
+const BETS=[
+ ['Slot machines','$100 a session',()=>{if(!spend(100))return;const r=Math.random();const w=r<.01?R(20,50)*1000:r<.12?R(2,6)*100:r<.35?R(50,150):0;S.money+=w;L(w?`I won ${fmt(w)} on the slot machines.`:'The slot machines ate my $100.',w>100?'good':'')}],
+ ['Roulette: bet $500 on red','Nearly a coin flip',()=>{if(!spend(500))return;if(C(18/37)){S.money+=1000;L('Red came up! I won $500 at roulette.','good')}else L('The ball landed on black. I lost $500.','bad')}],
+ ['Roulette: $100 on a single number','35 to 1 odds',()=>{if(!spend(100))return;if(C(1/37)){S.money+=3600;L('My number hit! I won $3,500 at roulette!','good')}else L('My number did not come up. I lost $100.')}],
+ ['Bet on a horse race','Pick a long shot or the favorite',()=>sheet('Horse race',a=>[['Lucky Biscuit (favorite)',2,.4],['Midnight Ledger',4,.22],['Copper Comet',8,.11],['Daisy Dynamo (long shot)',20,.045]].forEach(([h,odds,p])=>a.item(h,`Pays ${odds} to 1`,'$1,000',act('',()=>{if(!limit('horse',2,'The track is closed for the day.'))return;if(!spend(1000))return;if(C(p)){S.money+=1000*(odds+1);L(`${h.replace(/ \(.*\)/,'')} won! I collected ${fmt(1000*odds)}.`,'good')}else L(`I bet on ${h.replace(/ \(.*\)/,'')}. It finished out of the money.`,'bad')}),S.money<1000,['dice','purple'])))],
+ ['Play in a poker game','$1,000 buy-in with friends of friends',()=>{if(!spend(1000))return;const sc=S.stats.smarts+R(-30,30);if(sc>80){const w=R(2,8)*1000;S.money+=w+1000;L(`I cleaned up at a poker game and won ${fmt(w)}.`,'good')}else if(sc>50){S.money+=1000;L('I broke even at poker.')}else L('I lost my $1,000 buy-in at poker.','bad')}],
+ ['Bet on a sports match','$500 on your team',()=>{if(!spend(500))return;if(C(.47)){S.money+=950;L('My team won! I made $450.','good')}else L('My team lost and so did my $500.','bad')}],
+ ['Buy scratch cards','Five cards for $25',()=>{if(!spend(25))return;const r=Math.random();const w=r<.002?10e3:r<.05?R(50,200):r<.25?R(5,25):0;S.money+=w;L(w?`I won ${fmt(w)} on scratch cards.`:'None of my scratch cards won.',w>=50?'good':'')}],
+];
+function betMenu(){sheet('Casino & betting',api=>{api.sub(`You have ${fmt(S.money)}. The house always has the edge.`);
+  api.item('Blackjack','Beat the dealer',null,casino,false,['dice','purple']);
+  BETS.forEach(([n,d,fn])=>api.item(n,d,null,n.startsWith('Bet on a horse')?fn:act('',()=>{if(!limit('bet'+n,5,'The pit boss suggests you take a break.'))return;fn()}),false,['dice','purple']));});}
+/* ---------- the mysterious and the fantastic ---------- */
+const VILLAINS=['Doctor Static','the Gilded Moth','Captain Rust','the Hollow Choir','Madame Vortex','the Clockwork Baron','Nightglass','the Smiling Hydra'];
+const SPELLS=[['Spark of fortune','Conjure a little money'],['Mending touch','Heal your body'],['Glamour','Look your best'],['Mind’s eye','Sharpen your thinking'],['Heart’s warmth','Make someone love you more'],['Weather call','Summon perfect weather for a day']];
+function mysteryMenu(){sheet('Mysterious & fantasy',api=>{
+  api.sub('Strange things happen to those who go looking.');
+  if(S.magic)api.item('Your magic',`Rank: ${['Novice','Apprentice','Adept','Archmage'][Math.min(3,Math.floor((S.magic.xp||0)/30))]} · ${S.magic.spells.length} spells`,null,magicMenu,false,['star','purple']);
+  if(S.hero)api.item(`Hero life: ${esc(S.hero.alias)}`,`Reputation ${S.hero.rep}% · ${S.hero.secret?'secret identity':'identity public'}`,null,heroMenu,false,['bolt','gold']);
+  const once=(k,fn)=>()=>{if(S.flags['once_'+k]){toast('You have already done that in this life.');return}fn()};
+  const item=(l,d,mn,c,fn,ic,n)=>{if(S.age<mn)return;api.item(l,d,c?fmt(c):null,act('',()=>{if(!limit('m'+l,n||1,'Strange forces say: not again this year.'))return;if(c&&!spend(c))return;fn()}),S.money<c,ic)};
+  item('Visit a fortune teller','She reads your palm and frowns',8,40,()=>{L(`The fortune teller said: “${P(['A stranger will change your life before winter.','Beware of anything with wheels this year.','Gold is closer than you think.','Someone you have forgotten has not forgotten you.','Your greatest adventure has not started yet.','Do not trust the next person who offers you a deal.','A small kindness will return to you tenfold.'])}”`)},['star','purple']);
+  item('Make a wish at the old well','Toss in a coin and hope',5,1,()=>{const r=Math.random();if(r<.04){const v=R(10,100)*1000;S.money+=v;L(`I made a wish at the old well. A week later I found ${fmt(v)} in an old coat!`,'good')}else if(r<.08){st('looks',8);L('I wished to look my best. The next morning I was glowing.','good')}else if(r<.12&&!partner()&&S.age>=18)meet('the day after wishing for love at the old well');else if(r<.15){st('happy',-8);L('My wish at the well backfired. Everything went wrong that week.','bad')}else L('I made a wish at the old well. Nothing happened. Yet.')},['coin','gold']);
+  item('Go ghost hunting','The abandoned asylum on the hill',12,30,()=>{const r=Math.random();if(r<.15){S.followers+=R(5e3,80e3);S.fame=clamp(S.fame+4);L('I caught something on camera at the haunted asylum. The video went viral!','good')}else if(r<.4){st('happy',-5);L('Something whispered my name in the dark. I ran all the way home.','bad')}else L('I spent the night in a “haunted” house. Just creaky floors.')},['alert','purple']);
+  item('Search for the Marsh Strider','A legendary creature in the wetlands',10,200,()=>{if(C(.03)){S.money+=250e3;S.fame=clamp(S.fame+15);L('I photographed the Marsh Strider! Scientists paid $250,000 for the photos.','good')}else if(C(.2))L('I found giant footprints in the mud, but no Marsh Strider.');else L('I searched the wetlands for the Marsh Strider. Only mosquitoes.')},['paw','green']);
+  item('Watch the skies for UFOs','Lawn chair, thermos, patience',10,0,()=>{const r=Math.random();if(r<.02){const k=P(['smarts','looks','health']);st(k,15);st('happy',-5);L(`Bright lights took me aboard a craft. I woke up in a cornfield a week later, somehow ${k==='smarts'?'smarter':k==='looks'?'better looking':'healthier'}.`,'good')}else if(r<.12)L('I saw strange lights zigzag across the sky.');else L('I watched the night sky for UFOs. Just satellites.')},['star','teal']);
+  item('Go treasure hunting','Buy a map from an old sailor',16,500,()=>{const r=Math.random();if(r<.05){const v=R(100,900)*1000;S.money+=v;S.fame=clamp(S.fame+5);L(`I found a buried chest of gold coins worth ${fmt(v)}!`,'good')}else if(r<.2){const v=R(2,20)*1000;S.money+=v;L(`I dug up an old silver locket and sold it for ${fmt(v)}.`,'good')}else if(r<.3){st('health',-6);L('I fell into a sinkhole while treasure hunting.','bad')}else L('The treasure map led to a parking lot.')},['box','gold']);
+  item('Practice alchemy','Turn lead into gold. Allegedly.',18,1000,()=>{const r=Math.random();if(r<.04){const v=R(50,300)*1000;S.money+=v;L(`My alchemy experiment actually produced gold, worth ${fmt(v)}!`,'good')}else if(r<.25){st('health',-10);L('My alchemy lab exploded. My eyebrows are gone.','bad')}else{st('smarts',2);L('My alchemy experiment produced a strange purple smoke.')}},['bolt','orange']);
+  item('Buy a mysterious egg at the night market','The seller swears it is warm',18,5000,()=>{if(S.pets.some(p=>p.kind==='dragon'||p.kind==='mysterious egg')){toast('One mysterious egg is enough.');return}S.pets.push({id:uid(),kind:'mysterious egg',name:'The Egg',age:0,alive:true,bond:50});L('I bought a mysterious, warm egg at the night market.')},['gem','orange']);
+  if(S.pets.some(p=>p.kind==='dragon'&&p.alive))item('Fly on your dragon','Over the rooftops at sunset',10,0,()=>{const d=S.pets.find(p=>p.kind==='dragon');d.bond=clamp(d.bond+10);st('happy',12);S.followers+=R(1e3,30e3);L(`I flew over the city on my dragon ${d.name}.`,'good')},['plane','red'],2);
+  if(!S.magic&&S.age>=11&&S.age<=40)api.item('Answer the letter from the hidden academy','A school of magic, if they will have you',null,act('',once('magic',()=>{S.flags.once_magic=1;if(S.stats.smarts+R(0,50)>60){S.magic={xp:0,spells:[SPELLS[0][0]],mana:3};L('I was accepted into a hidden academy of magic!','good');st('happy',15)}else L('The academy of magic said I was not ready.','bad')})),false,['star','purple']);
+  if(!S.hero&&S.age>=18&&S.age<=55)api.item('Become a masked vigilante','Protect the city at night',null,act('',()=>{if(S.stats.health<50){toast('You need health of 50%+ to fight crime.');return}S.hero={alias:`The ${P(['Night','Silver','Crimson','Iron','Storm','Shadow','Golden','Velvet'])} ${P(['Fox','Owl','Comet','Lantern','Sentinel','Falcon','Wraith','Spark'])}`,rep:10,secret:true};L(`I became the masked vigilante known as ${S.hero.alias}.`,'good')}),false,['bolt','gold']);
+  if(!S.vampire&&S.age>=18)api.item('Accept a pale stranger’s offer','“Join me, and never grow old.”',null,act('',()=>{popup('Eternal life?','The stranger smiles, showing very sharp teeth. You will stop aging, but sunlight will burn and loneliness will follow you.',[['Accept',()=>{S.vampire=1;S.flags.vampAge=S.age;st('looks',5);L('I became a vampire. I will never grow old.','good')}],['Run away',()=>L('I ran from a strange pale figure in an alley.')]])}),false,['heart','red']);
+  if(S.vampire)api.item('Seek a cure for vampirism','A rare potion, a steep price',null,act('',()=>{if(!spend(1e6,'the cure'))return;S.vampire=0;L('I drank a rare potion and became human again.','good')}),S.money<1e6,['pill','red']);
+  if(S.age>=40)api.item('Search for the Fountain of Youth','A long expedition into the jungle',fmt(50e3),act('',once('fountain',()=>{if(!spend(50e3))return;S.flags.once_fountain=1;if(C(.25)){S.youth=(S.youth||0)+12;st('health',20);st('looks',10);L('I found the Fountain of Youth! My body feels twelve years younger.','good')}else{st('health',-5);L('I searched the jungle for the Fountain of Youth and came home with malaria-like fevers.','bad')}})),S.money<50e3,['smile','teal']);
+  if(S.age>=18)api.item('Step through a shimmering portal','Behind the old library. Once per life.',null,act('',once('portal',()=>{S.flags.once_portal=1;['happy','health','smarts','looks'].forEach(k=>S.stats[k]=clamp(S.stats[k]+R(-20,20)));S.money=Math.round(S.money*(0.5+Math.random()));S.country=P(COUNTRIES.filter(c=>c!==S.country));L(`I stepped through a portal into a parallel world. I live in ${S.country} now, and nothing is quite the same.`,'good')})),false,['globe','purple']);
+  if(S.age>=60)api.item('Freeze yourself cryogenically','Wake up 30 years in the future',fmt(200e3),act('',once('cryo',()=>{if(!spend(200e3))return;S.flags.once_cryo=1;S.year0+=30;S.invest=Math.round(S.invest*Math.pow(1.05,30));
+    S.people.forEach(p=>{if(!p.alive)return;for(let i=0;i<30&&p.alive;i++){p.age++;if(C(p.age<60?.002:p.age<75?.02:p.age<85?.07:.18))p.alive=false}});
+    S.job=null;S.sp=null;L(`I was frozen and woke up 30 years later, in ${S.year0+S.age}. The world looks very different.`,'good');st('happy',-5)})),S.money<200e3,['clock','teal']);
+});}
+function magicMenu(){sheet('Magic',api=>{const m=S.magic;
+  api.html(`<div class="kv"><span>Rank</span><span>${['Novice','Apprentice','Adept','Archmage'][Math.min(3,Math.floor(m.xp/30))]}</span><span>Experience</span><span>${m.xp}</span><span>Spells known</span><span>${m.spells.length} of ${SPELLS.length}</span></div>`);
+  api.item('Study at the academy','Learn a new spell',null,act('',()=>{if(!limit('study_m',1,'The library of spells is closed until next year.'))return;m.xp+=R(4,9);const next=SPELLS.find(s2=>!m.spells.includes(s2[0]));if(next&&C(.6)){m.spells.push(next[0]);L(`I learned a new spell: ${next[0]}.`,'good')}else L('I studied ancient spellbooks late into the night.')}),false,['book','purple']);
+  api.sec('Cast a spell (three a year)');
+  SPELLS.filter(s2=>m.spells.includes(s2[0])).forEach(([n,d])=>api.item(n,d,null,act('',()=>{if(!limit('cast',3,'Your magic is exhausted until next year.'))return;m.xp+=2;const pow=1+Math.floor(m.xp/30);
+    if(C(.1)){st('health',-5);L(`My ${lc(n)} spell backfired in a puff of green smoke.`,'bad');return}
+    if(n==='Spark of fortune'){const v=R(1,5)*1000*pow;S.money+=v;L(`My spell conjured ${fmt(v)} out of thin air.`,'good')}
+    else if(n==='Mending touch'){st('health',6*pow);if(S.ill.length&&C(.3*pow)){const i=S.ill.shift();L(`My healing magic cured my ${i.n}.`,'good')}else L('I healed myself with magic.','good')}
+    else if(n==='Glamour'){st('looks',4*pow);L('My glamour spell made me radiant.','good')}
+    else if(n==='Mind’s eye'){st('smarts',4*pow);L('My mind feels sharp as glass.','good')}
+    else if(n==='Heart’s warmth'){const p=partner()||P(alive());if(p){p.bond=clamp(p.bond+12*pow);L(`I cast a warming charm on ${fn1(p)}.`,'good')}}
+    else{st('happy',8);L('I conjured a perfect sunny day for the whole town.','good')}}),false,['star','purple']));
+  api.item('Duel a rival mage','Win to rise in rank',null,act('',()=>{if(!limit('duel',1,'Duels are once a year.'))return;if(C(.4+m.xp/200)){m.xp+=10;S.fame=clamp(S.fame+1);L('I won a magical duel!','good')}else{st('health',-12);L('I lost a magical duel and was hit by a hex.','bad')}}),false,['bolt','red']);
+});}
+function heroMenu(){sheet(S.hero.alias,api=>{const h=S.hero;
+  api.html(`<div class="kv"><span>Hero name</span><span>${esc(h.alias)}</span><span>Reputation</span><span>${h.rep}%</span><span>Identity</span><span>${h.secret?'Secret':'Public'}</span><span>Villains defeated</span><span>${h.wins||0}</span></div>`);
+  api.item('Patrol the city','Stop muggings and car thieves',null,act('',()=>{if(!limit('patrol',2,'You need sleep. Patrol again next year.'))return;if(C(.15)){st('health',-10);L('I was injured on night patrol.','bad')}else{h.rep=clamp(h.rep+R(3,7));kar(3);L(`${h.alias} stopped a mugging on patrol.`,'good')}}),false,['bolt','gold']);
+  api.item('Stop a bank robbery','Big crowd, big risk',null,act('',()=>{if(!limit('robbery',1,'The city is quiet this year.'))return;if(C(.45+h.rep/250+S.stats.health/400)){h.rep=clamp(h.rep+12);S.fame=clamp(S.fame+3);L(`${h.alias} foiled a bank robbery! The papers call me a hero.`,'good')}else{st('health',-18);h.rep=clamp(h.rep-5);L('The robbers got away and I was badly hurt.','bad')}}),h.rep<15,['mask','red']);
+  api.item(`Battle a supervillain`,'Needs reputation of 40%+',null,act('',()=>{if(!limit('villain',1,'No villain dares show their face this year.'))return;const v=P(VILLAINS);if(C(.35+h.rep/200)){h.rep=clamp(h.rep+20);h.wins=(h.wins||0)+1;S.fame=clamp(S.fame+6);st('happy',12);L(`${h.alias} defeated ${v} and saved the city!`,'good')}else{st('health',-28);L(`${v} defeated me. I barely escaped.`,'bad')}}),h.rep<40,['bolt','red']);
+  if(h.secret)api.item('Reveal your secret identity','Fame, but no more privacy',null,act('',()=>{h.secret=false;S.fame=clamp(S.fame+20);S.followers+=R(1e5,1e6);L(`I revealed to the world that I am ${h.alias}!`,'good')}),false,['camera','pink']);
+  api.item('Hang up the mask','Retire from crimefighting',null,act('',()=>{L(`${h.alias} retired from crimefighting.`,'good');S.hero=null},'close'),false,['clock','purple']);
+});}
+function moreActs(api){
+  const a=S.age;
+  api.sec('Explore');
+  api.item('Hobbies',`${HOBBIES.length} to master`,null,hobbyMenu,false,['star','teal']);
+  if(a<=12)api.item('Kid stuff','Pillow forts, bug hunts, lemonade',null,()=>sheet('Kid stuff',x=>KIDS.forEach(k=>doIt(x,k))),false,['smile','orange']);
+  if(a>=11&&a<=18)api.item('Teen life','Bands, clubs and sneaking out',null,()=>sheet('Teen life',x=>TEENS.forEach(k=>doIt(x,k))),false,['music','purple']);
+  if(a>=3)api.item('Social & going out','Parties, dates, outings and good deeds',null,()=>sheet('Social & going out',x=>SOCIAL.forEach(k=>doIt(x,k))),false,['users','pink']);
+  if(a>=6)api.item('Competitions','Pageants, tournaments, eating contests',null,compMenu,false,['crown','gold']);
+  if(a>=18)api.item('Travel the world',`${PLACES.length} destinations`,null,travelMenu,false,['plane','blue']);
+  if(a>=3)api.item('Style & self-care','Hair, tattoos, therapy, skincare',null,()=>sheet('Style & self-care',x=>STYLE.forEach(k=>doIt(x,k))),false,['brush','pink']);
+  if(a>=16)api.item('Everyday life','Taxes, wills, classes, garage sales',null,()=>sheet('Everyday life',x=>ADULT.forEach(k=>doIt(x,k))),false,['home','blue']);
+  if(a>=18)api.item('Casino & betting','Slots, roulette, horses, poker',null,betMenu,false,['dice','purple']);
+  if(a>=5)api.item('Mysterious & fantasy','Ghosts, magic, dragons, heroes, portals',null,mysteryMenu,false,['star','purple']);
+}
+
 function actMenu(){sheet('Activities',api=>{
   const a=S.age,adult=a>=18;
   if(S.jail>0){api.sub('Prison limits what you can do.');
     api.item('Work out in the yard','',null,act('',()=>{st('health',R(2,5));L('I worked out in the prison yard.')}));
     api.item('Read in the library','',null,act('',()=>{st('smarts',R(2,5));L('I read in the prison library.')}));
     api.item('Attempt an escape','',null,act('',()=>{if(!limit('escape',1,'Guards are watching you closely. Wait until next year.'))return;if(C(.18)){S.jail=0;L('I escaped from prison!','good')}else{S.jail+=R(1,4);L('My escape attempt failed and my sentence was extended.','bad')}}));return}
+  moreActs(api);
   api.sec('Mind & body');
   const train=(k,label,stat,dl,msg)=>api.item(label,'',null,act('',()=>{if(!limit(k,2,'You are worn out. Try again next year.'))return;const gain=R(dl[0],dl[1]);stat.forEach(s=>st(s,gain));L(msg)}));
   if(a>=6)train('gym','Go to the gym',['health'],[3,7],'I worked out at the gym.');
