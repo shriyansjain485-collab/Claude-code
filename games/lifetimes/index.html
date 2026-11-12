@@ -482,7 +482,7 @@ const he=()=>S.g==='M';
 const alive=r=>S.people.filter(p=>p.alive&&(!r||p.rel.startsWith(r)));
 const partner=()=>S.people.find(p=>p.alive&&['Partner','Fiancé','Fiancée','Spouse'].includes(p.rel));
 const portValue=()=>{ensureMarket();return Object.entries(S.port).reduce((a,[k,n])=>a+n*S.market[k],0)};
-const netWorth=()=>S.money+S.invest+portValue()+S.assets.reduce((a,x)=>a+x.value-(x.loan||0),0)+S.biz.reduce((a,b)=>a+b.value*(b.own==null?100:b.own)/100-(b.loan||0),0);
+const netWorth=()=>S.money+S.invest+portValue()+(S.inv2?inv2Value():0)+(S.zoo?zooValue(S.zoo):0)+(S.museum?800e3:0)+S.assets.reduce((a,x)=>a+x.value-(x.loan||0),0)+S.biz.reduce((a,b)=>a+b.value*(b.own==null?100:b.own)/100-(b.loan||0),0);
 function ensureMarket(){if(!S.market){S.market={};MARKET.forEach(m=>S.market[m.s]=m.p)}if(!S.port)S.port={}}
 
 function save(){try{localStorage.setItem(SAVE,JSON.stringify({S,nextId}))}catch(e){}}
@@ -829,6 +829,7 @@ function finances(){
     S.pets.filter(p=>p.alive).forEach(()=>S.money-=500);
   }
   assetYear();
+  packsYear();
   marketYear();
   // investments
   if(S.invest>0){const r=(Math.random()*0.5-0.18);const g=Math.round(S.invest*r);S.invest+=g;L(`My investment portfolio ${g>=0?'gained':'lost'} ${fmt(Math.abs(g))}.`,g>=0?'good':'bad')}
@@ -870,6 +871,12 @@ function die(text){
 }
 function ribbon(){
   const nw=netWorth();const sp=S.sp||{};
+  if(sp.kind==='race'&&sp.titles>=2)return['Speed Demon','Champion behind the wheel.'];
+  if(sp.kind==='fight'&&sp.belt)return['Undisputed','Held the belt.'];
+  if(sp.kind==='agent'&&sp.rank>=3)return['Spymaster','Nobody ever knew.'];
+  if(sp.kind==='director'&&sp.awards)return['Auteur','Made films that mattered.'];
+  if(sp.kind==='cult'&&sp.followers>=1000)return['Prophet','Thousands followed.'];
+  if(S.zoo&&zooCount(S.zoo)>=30)return['Zookeeper','Built a wild kingdom.'];
   if(S.vampire&&S.age>=120)return['Immortal','Outlived centuries.'];
   if(S.hero&&(S.hero.wins||0)>=3)return['Superhero','Saved the city, again and again.'];
   if(S.magic&&S.magic.xp>=90)return['Archmage','Mastered the arcane arts.'];
@@ -1501,7 +1508,7 @@ const ROLES=[
  {n:'Lead in a summer blockbuster',fame:65,skill:65,agent:1,pay:[5e6,20e6],gain:14,award:.08},
 ];
 const spTier=(v,t)=>t[v>=90?4:v>=75?3:v>=55?2:v>=30?1:0];
-function spTitle(){const s=S.sp;if(!s)return'';
+function spTitle(){const s=S.sp;if(!s)return'';if(SPX[s.kind])return SPX[s.kind].title(s);
   if(s.kind==='sport')return `${s.sport} ${['rookie','pro','star','superstar','legend'][s.skill>=95?4:s.skill>=86?3:s.skill>=72?2:s.skill>=55?1:0]}${s.team?'':' (free agent)'}`;
   if(s.kind==='actor')return spTier(S.fame,['Aspiring actor','Working actor','Rising star','Movie star','Screen legend']);
   if(s.kind==='music')return `${spTier(S.fame,['Bedroom musician','Indie artist','Signed artist','Chart topper','Music icon'])} (${s.genre})`;
@@ -1512,7 +1519,7 @@ function spEnd(msg,cls){if(!S.sp)return;L(msg||`I walked away from my career as 
 const sportSalary=k=>Math.round((35e3+Math.pow(k/100,6)*9e6)/1000)*1000;
 const newTeam=()=>`${P(TEAM_CITIES)} ${P(TEAM_NICKS)}`;
 function spYear(){
-  const s=S.sp;if(!s||S.jail)return;s.years=(s.years||0)+1;const active=s.active;s.active=0;
+  const s=S.sp;if(!s||S.jail)return;s.years=(s.years||0)+1;const active=s.active;s.active=0;if(SPX[s.kind]){SPX[s.kind].year(s,active);return}
   if(s.kind==='sport'){
     if(S.age<27)s.skill=clamp(s.skill+R(0,3));else if(S.age>31)s.skill=clamp(s.skill-R(1,5));
     if(s.injured>0){s.injured--;L(`I spent the season recovering from my ${s.injury}.`,'bad')}
@@ -1558,6 +1565,7 @@ function specialMenu(){sheet('Special careers',api=>{
   api.item('Music','Write songs, release albums, tour the world',null,()=>sheet('Pick a genre',a=>GENRES.forEach(g=>a.item(g,'',null,act('',()=>startSp({kind:'music',genre:g,skill:clamp(S.stats.smarts/4+R(10,30)),songs:0,catalog:0,label:0,albums:0,hits:0},`I started making ${g.toLowerCase()} music.`),'close'),false,['music','purple']))),!!S.sp||S.age<12,['music','purple']);
   api.item('Politics','Win elections from city council to head of state',null,()=>sheet('Pick a party',a=>PARTIES.forEach(pt=>a.item(pt,'',null,act('',()=>startSp({kind:'pol',party:pt,office:-1,best:-1,approval:R(40,60),term:0},`I joined the ${pt} to start a political career.`),'close'),false,['crown','gold']))),!!S.sp||S.age<21,['crown','gold']);
   api.item('Black-market dealer','Move counterfeit and smuggled goods. Illegal and risky.',null,()=>sheet('What will you sell?',a=>GOODS.forEach(g=>a.item(g[0].toUpperCase()+g.slice(1),'',null,act('',()=>startSp({kind:'dealer',goods:g,stock:0,heat:0,rep:0},`I started dealing ${g} on the black market.`),'close'),false,['mask','red']))),!!S.sp||S.age<18,['mask','red']);
+  Object.values(SPX).forEach(x=>x.entry(api));
 });}
 function startSp(o,msg){if(S.job){L(`I quit my job as ${S.job.title}.`);S.job=null}S.sp={years:0,...o};L(msg,'good')}
 function startSport(sp){
@@ -1572,6 +1580,7 @@ function startSport(sp){
 function spMenu(){if(!S.sp){specialMenu();return}sheet('My career',api=>{
   const s=S.sp;if(!s){api.sub('You no longer have a special career.');return}
   stack[stack.length-1].title=spTitle();
+  if(SPX[s.kind]){SPX[s.kind].menu(api,s);if(S.sp)api.item('Leave this career','',null,act('',()=>spEnd(),'close'),false,['clock','purple']);return}
   if(s.kind==='sport'){
     api.html(`<div class="kv"><span>Sport</span><span>${esc(s.sport)}</span><span>Skill</span><span>${s.skill}%</span>${s.team?`<span>Team</span><span>${esc(s.team)}</span><span>Salary</span><span>${fmt(s.salary)}/yr</span><span>Contract</span><span>${s.contract} yr${s.contract===1?'':'s'} left</span>`:SOLO.includes(s.sport)?`<span>World ranking</span><span>${s.rank?'#'+s.rank:'Unranked'}</span>`:'<span>Team</span><span>Free agent</span>'}<span>${SOLO.includes(s.sport)?'Major titles':'Championships'}</span><span>${s.titles||0}</span><span>Fame</span><span>${S.fame}%</span>${s.injured?`<span>Injury</span><span>${esc(s.injury)}</span>`:''}${s.endorse?`<span>Endorsements</span><span>${fmt(s.endorse)}/yr</span>`:''}</div>`);
     api.item('Train hard','Raise your skill. Small injury risk.',null,act('',()=>{if(!limit('train',2,'Your coach says rest now. Train again next year.'))return;if(s.injured){toast('You are injured. Rest first.');return}if(C(.08)){s.injured=1;s.injury='pulled muscle';L('I pulled a muscle in training.','bad')}else{s.skill=clamp(s.skill+(s.skill>=85?R(0,2):R(1,4)));st('health',1);L(`I trained hard. My skill is now ${s.skill}%.`,'good')}}),false,['dumbbell','green']);
@@ -1656,8 +1665,7 @@ function assetYear(){
     const t=ATYPE[a.type]||ATYPE.item;const g=R(t.g[0],t.g[1])/100;a.value=Math.max(0,Math.round(a.value*(1+g)));
     const up=Math.round((t.flat||0)+a.value*(t.up||0));if(up)S.money-=up;
     if(a.loan>0){const pay=Math.min(a.loan*1.06,Math.round(a.price*0.08));S.money-=pay;a.loan=Math.max(0,Math.round(a.loan*1.05-pay));if(a.loan===0)L(`I paid off the mortgage on my ${lc(a.name)}.`,'good')}
-    if(a.rented){const r=Math.round(a.value*R(4,7)/100);S.money+=r;rent+=r;a.rentTotal=(a.rentTotal||0)+r;
-      if(C(.08)){const d=Math.round(a.value*0.03);S.money-=d;L(`Tenants damaged my ${lc(a.name)}. Repairs cost ${fmt(d)}.`,'bad')}}
+    if(a.rented){const r=landlordYear(a);S.money+=r;rent+=r}
     if(a.fx)Object.entries(a.fx).forEach(([k,v])=>{fxSum[k]=(fxSum[k]||0)+v});
   });
   Object.entries(fxSum).forEach(([k,v])=>st(k,Math.min(3,v)));
@@ -1686,11 +1694,17 @@ function assetsMenu(){sheet('Assets',api=>{
   api.item('Home & hobbies','Things that boost your stats every year',`${stock('item').length} items`,()=>shop('item'),false,['star','teal']);
   api.item('Experiences','Trips, thrills and treats',`${stock('exp').length} ideas`,()=>shop('exp'),false,['smile','orange']);
   api.item('Art gallery','New works each year',null,gallery);
+  api.item('VIP lifestyle','Staff, exclusive clubs and big splurges',null,vipMenu,false,['crown','gold']);
+  api.item('Black market','Contraband art and antiquities. Illegal.',null,blackMarket,false,['mask','red']);
+  api.sec('Ventures');
+  api.item(S.zoo?S.zoo.name:'Open a zoo',S.zoo?`${zooCount(S.zoo)} animals · rating ${S.zoo.rating}%`:'Collect animals, sell tickets',null,zooMenu,false,['paw','green']);
+  api.item(S.museum?S.museum.name:'Open a private museum',S.museum?'Display your collection':'Show off your art and collectibles',null,museumMenu,false,['book','purple']);
   api.sec('Auctions');
   api.item('Auction house','Bid on art, collectibles, classic cars and foreclosed homes',null,auctionHouse);
   api.item('Storage unit auctions','Bid blind on abandoned units',null,storageAuctions);
   api.item('Sell at auction','Put something you own under the hammer',null,sellAtAuction,!S.assets.length);
   api.sec('Investing');
+  api.item('Bonds, gold & startups','Interest, safe havens and angel investing',null,investMenu,false,['chart','green']);
   api.item('Stock & crypto market','Nine tickers, prices move every year',null,marketMenu);
   api.item('Index fund',`Balance ${fmt(S.invest)}`,null,()=>sheet('Index fund',a=>{[1e3,1e4,1e5,1e6].forEach(v=>a.item(`Invest ${fmt(v)}`,'',null,act('',()=>{if(!spend(v))return;S.invest+=v;L(`I invested ${fmt(v)} in an index fund.`)}),S.money<v));a.item('Withdraw everything',fmt(S.invest),null,act('',()=>{S.money+=S.invest;L(`I withdrew ${fmt(S.invest)} from my index fund.`);S.invest=0}),S.invest<=0)}));
 });}
@@ -1702,7 +1716,8 @@ function assetDetail(id){sheet('Asset',api=>{
   api.item('Sell now',`Quick sale at about 92% of value${a.loan?', mortgage repaid':''}`,fmt(Math.round(a.value*0.92)-(a.loan||0)),act('',()=>{const v=Math.round(a.value*0.92)-(a.loan||0);S.money+=v;S.assets=S.assets.filter(x=>x!==a);L(`I sold my ${lc(a.name)} and cleared ${fmt(v)}.`)},'back'));
   api.item('Sell at auction','Could go well over value, or under. 10% fee.',null,()=>auctionSale(a.id));
   if(a.type==='house'){
-    api.item(a.rented?'Stop renting it out':'Rent it out',a.rented?'Move back in or leave it empty':'Earn about 4–7% of its value each year',null,act('',()=>{a.rented=!a.rented;L(a.rented?`I started renting out my ${lc(a.name)}.`:`I stopped renting out my ${lc(a.name)}.`)}));
+    if(a.rented)api.item('Manage tenant',a.tenant?`${a.tenant.name} · happiness ${a.tenant.mood}%${a.repair?' · repair needed':''}`:'Vacant: find a tenant',null,()=>tenantMenu(a.id),false,['users','blue']);
+    api.item(a.rented?'Stop renting it out':'Rent it out',a.rented?'Move back in or leave it empty':'Earn about 4–7% of its value each year',null,act('',()=>{a.rented=!a.rented;if(a.rented&&!a.tenant)a.tenant=newTenant();L(a.rented?`I started renting out my ${lc(a.name)}.`:`I stopped renting out my ${lc(a.name)}.`)}));
     api.item('Renovate',`Costs ${fmt(Math.round(a.value*0.06))} · adds about 10% value`,null,act('',()=>{const c=Math.round(a.value*0.06);S.money-=c;a.value=Math.round(a.value*(1+R(6,14)/100));L(`I renovated my ${lc(a.name)}.`,'good');st('happy',3)}));
     if(a.loan)api.item('Pay off mortgage',fmt(a.loan),null,act('',()=>{if(!spend(a.loan))return;L(`I paid off the ${fmt(a.loan)} mortgage on my ${lc(a.name)}.`,'good');a.loan=0}),S.money<a.loan);
     api.item('Throw a house party','$2,000',null,act('',()=>{if(!spend(2000))return;st('happy',6);alive().forEach(p=>{if(p.rel==='Friend')p.bond=clamp(p.bond+5)});L(`I threw a party at my ${lc(a.name)}.`,'good')}));
@@ -1720,6 +1735,7 @@ function houseShop(){
       [`Mortgage (${fmt(h.p*0.2)} down)`,()=>{if(S.money<h.p*0.2||(!S.job&&!S.biz.length&&S.money<h.p*0.5)){L(`The bank turned down my mortgage for the ${lc(h.n)}.`,'bad');return}buy('house',h.n,h.p,true);S.flags.houses=S.flags.houses.filter(x=>x!==h)}],
       ['Make a lowball offer (85%)',()=>{if(C(.35)){if(S.money<h.p*0.85*0.2){L('My lowball offer was accepted but I could not cover the down payment.','bad');return}buy('house',h.n,Math.round(h.p*0.85),S.money<h.p*0.85);S.flags.houses=S.flags.houses.filter(x=>x!==h)}else L(`The seller rejected my lowball offer on the ${lc(h.n)}.`)}],
       ['Keep looking',null]]),S.money<h.p*0.17));
+    exclusiveHomes(api);
   });
 }
 function stock(k){const key='stk_'+k;let f=S.flags[key];
@@ -2135,8 +2151,285 @@ function moreActs(api){
   if(a>=3)api.item('Style & self-care','Hair, tattoos, therapy, skincare',null,()=>sheet('Style & self-care',x=>STYLE.forEach(k=>doIt(x,k))),false,['brush','pink']);
   if(a>=16)api.item('Everyday life','Taxes, wills, classes, garage sales',null,()=>sheet('Everyday life',x=>ADULT.forEach(k=>doIt(x,k))),false,['home','blue']);
   if(a>=18)api.item('Casino & betting','Slots, roulette, horses, poker',null,betMenu,false,['dice','purple']);
+  if(a>=4)api.item('The great outdoors','Camping, rafting, expeditions',null,()=>sheet('The great outdoors',x=>OUTDOORS.forEach(k=>doIt(x,k))),false,['globe','green']);
   if(a>=5)api.item('Mysterious & fantasy','Ghosts, magic, dragons, heroes, portals',null,mysteryMenu,false,['star','purple']);
 }
+
+/* ---------- expansions: more special careers, zoo, museum, black market, landlord, VIP life, investing, outdoors ---------- */
+const SPX={};
+const RACE_TIERS=['Street racer','Kart racer','Touring car driver','Junior formula driver','Grand Prix driver'];
+const RACE_TEAMS=['Apex Velocity','Northline Racing','Scuderia Corvo','Blue Meridian','Team Halcyon','Redline Works','Silver Arrow Motorsport','Vanta GP'];
+const raceSalary=s=>[0,0,60e3,150e3,1e6][s.tier]*(0.6+s.skill/80);
+SPX.race={
+ entry:api=>api.item('Motor racing','Street races, karting, touring cars, Grand Prix',null,()=>sheet('Start racing',a=>{
+   a.item('Race go-karts','The legal way up. Ages 8+.',fmt(2000),act('',()=>{if(!spend(2000))return;startSp({kind:'race',tier:1,skill:clamp(S.stats.health/5+S.stats.smarts/5+R(5,25)),car:1,wins:0,season:0,titles:0},'I started racing go-karts.')},'close'),S.age<8||S.money<2000,['car','blue']);
+   a.item('Street racing','Fast money, police risk. Needs a car.',null,act('',()=>{if(!S.assets.some(x=>x.type==='car')){toast('You need a car to street race.');return}startSp({kind:'race',tier:0,skill:clamp(S.stats.health/5+S.stats.smarts/5+R(5,25)),car:1,wins:0,season:0,titles:0},'I started racing on the streets at night.')},'close'),S.age<16,['car','red'])}),!!S.sp||S.age<8,['car','red']),
+ title:s=>RACE_TIERS[s.tier]+(s.titles?` · ${s.titles}× champion`:''),
+ year:s=>{if(S.age<26)s.skill=clamp(s.skill+R(0,2));else if(S.age>36)s.skill=clamp(s.skill-R(1,4));
+   if(s.tier>=2){const pay=Math.round(raceSalary(s)*0.7);S.money+=pay;if(s.season>=3&&C(.45)){s.titles++;S.fame=clamp(S.fame+5+s.tier*2);st('happy',15);L(`I won the ${['','','touring car','junior formula','Grand Prix'][s.tier]} championship!`,'good')}else if(s.season)L(`I won ${s.season} race${s.season>1?'s':''} this season.`,'good')}
+   if(s.sponsor)S.money+=s.sponsor;s.season=0;if(S.age>=48)spEnd('I retired from motor racing.','good')},
+ menu:(api,s)=>{
+   api.html(`<div class="kv"><span>Level</span><span>${RACE_TIERS[s.tier]}</span><span>Driving skill</span><span>${s.skill}%</span>${s.tier<=1?`<span>Car upgrades</span><span>${s.car}/5</span>`:`<span>Team</span><span>${esc(s.team||'')}</span><span>Salary</span><span>${fmt(raceSalary(s))}/yr</span>`}<span>Career wins</span><span>${s.wins}</span><span>Wins this season</span><span>${s.season}</span><span>Championships</span><span>${s.titles}</span></div>`);
+   api.item('Practice laps','Sharpen your racecraft',null,act('',()=>{if(!limit('laps',2,'The track is booked. Practice again next year.'))return;s.skill=clamp(s.skill+(s.skill>80?R(0,2):R(1,4)));L(`I put in practice laps. Skill: ${s.skill}%.`)}),false,['clock','blue']);
+   api.item(s.tier===0?'Enter a street race':'Race this weekend',s.tier===0?'Winner takes the pot. Police patrol at night.':'Up to four races a year',null,act('',()=>{if(!limit('race',s.tier===0?3:4,'Your season calendar is full.'))return;
+     const field=s.tier===0?8:20;const perf=s.skill+(s.tier<=1?s.car*4:12)+R(-22,22);const pos=Math.max(1,Math.min(field,Math.round((100-perf)/4)+1));
+     if(C(.05)){st('health',-R(6,25));if(s.tier<=1)s.car=Math.max(1,s.car-1);L('I crashed out of the race.','bad');return}
+     if(s.tier===0&&C(.08)){arrest('Police shut down a street race and arrested me.',R(1,3));return}
+     if(pos===1){s.wins++;s.season++;const prize=s.tier===0?R(2,15)*1000:s.tier===1?500:Math.round(raceSalary(s)*0.03);S.money+=prize;S.fame=clamp(S.fame+1+s.tier);st('happy',8);L(`I won the race${prize?` and ${fmt(prize)}`:''}!`,'good')}
+     else L(`I finished in position ${pos} of ${field}.`,pos<=3?'good':'')}),false,['car','red']);
+   if(s.tier<=1)api.item('Upgrade your car','Engine, tires, suspension',fmt(2000*s.car*s.car),act('',()=>{if(!spend(2000*s.car*s.car))return;s.car++;L(`I upgraded my ${s.tier===0?'street car':'kart'} to level ${s.car}.`,'good')}),s.car>=5||S.money<2000*s.car*s.car,['bolt','orange']);
+   const need=[[0,0],[3,45],[6,60],[10,72]][s.tier]||[99,99];
+   if(s.tier>=1&&s.tier<4)api.item(`Move up to ${RACE_TIERS[s.tier+1]}`,`Needs ${need[0]} career wins and ${need[1]}% skill`,null,act('',()=>{s.tier++;s.team=P(RACE_TEAMS);L(`I signed with ${s.team} as a ${RACE_TIERS[s.tier].toLowerCase()}!`,'good');st('happy',12)}),s.wins<need[0]||s.skill<need[1],['star','gold']);
+   if(s.tier===0)api.item('Go legit: switch to karting','Leave the streets behind',null,act('',()=>{s.tier=1;L('I quit street racing and joined a karting league.','good')}),false,['car','blue']);
+   if(s.tier>=2)api.item('Sign a sponsor','Needs fame of 15%+',null,act('',()=>{if(!limit('rsp',1,'One sponsor deal a year.'))return;s.sponsor=Math.round(S.fame*S.fame*R(40,120));L(`I signed a ${P(['tire','energy drink','watch','oil','phone'])} sponsorship worth ${fmt(s.sponsor)} a year.`,'good')}),S.fame<15,['coin','gold']);
+ }};
+const MISSIONS=[['Surveillance stakeout',20,5e3],['Plant a bug in an embassy',40,15e3],['Infiltrate a smuggling ring',55,30e3],['Extract a defector',65,50e3],['Recover stolen blueprints',72,70e3],['Sabotage a rogue weapons lab',82,120e3]];
+const GADGETS=['Lockpick pen','Camera cufflinks','Voice-changing collar','Grappling wristwatch','Smoke-bomb shoes','Translator earpiece'];
+const AGENT_RANKS=['Trainee agent','Field agent','Senior agent','Section chief','Agency director'];
+SPX.agent={
+ entry:api=>api.item('Intelligence agency','Missions, gadgets and a secret identity. Needs a clean record.',null,act('',()=>{if(S.stats.smarts+R(0,40)<70){L('The intelligence agency rejected my application.','bad');return}
+   startSp({kind:'agent',rank:0,code:`Agent ${P(['Kestrel','Juniper','Echo','Harrow','Vesper','Quill','Onyx','Lark','Wren','Cipher'])}`,missions:0,cover:100,gadgets:[]},'I was recruited by a secret intelligence agency.')},'close'),!!S.sp||S.age<21||S.record>0,['lock','teal']),
+ title:s=>AGENT_RANKS[s.rank],
+ year:s=>{S.money+=Math.round([60e3,90e3,130e3,180e3,260e3][s.rank]*0.74);s.cover=Math.min(100,s.cover+10)},
+ menu:(api,s)=>{
+   api.html(`<div class="kv"><span>Codename</span><span>${esc(s.code)}</span><span>Rank</span><span>${AGENT_RANKS[s.rank]}</span><span>Missions completed</span><span>${s.missions}</span><span>Cover</span><span>${s.cover}%</span><span>Gadgets</span><span>${s.gadgets.length?esc(s.gadgets.join(', ')):'None'}</span></div>`);
+   api.item('Take a mission','Up to three a year',`${3-(S.acts.mission||0)} left`,()=>sheet('Missions',a=>MISSIONS.forEach(([n,diff,bonus])=>a.item(n,`Difficulty ${diff}% · bonus ${fmt(bonus)}`,null,act('',()=>{if(!limit('mission',3,'Headquarters says rest. No more missions this year.'))return;
+     const sc=S.stats.smarts*0.4+S.stats.health*0.3+s.gadgets.length*6+s.rank*5+s.cover*0.1+R(0,40);
+     if(sc>diff+30){S.money+=bonus;s.missions++;L(`${s.code} completed a mission: ${lc(n)}.`,'good');if(s.rank<4&&s.missions>=(s.rank+1)*4){s.rank++;L(`I was promoted to ${AGENT_RANKS[s.rank]}.`,'good')}}
+     else{s.cover=Math.max(0,s.cover-R(15,30));st('health',-R(5,15));L(`The mission went wrong: ${lc(n)}.`,'bad');
+       if(C(.15))popup('Captured!','Enemy agents have you tied to a chair in a basement.',[['Pick the lock with a hidden pin',()=>{if(C(.5+s.gadgets.length*.05))L('I picked the lock and escaped!','good');else{st('health',-15);L('I was caught escaping and roughed up before my team rescued me.','bad')}}],['Bribe the guard',()=>{if(S.money>=20000&&C(.6)){S.money-=20000;L('I bribed a guard and slipped out.')}else{st('health',-10);L('The guard took the bribe and kept me anyway, until my team arrived.','bad')}}],['Wait for extraction',()=>{st('happy',-8);L('After a long week, my agency extracted me.')}]]);
+       if(s.cover<=0){spEnd('My cover was blown. The agency pulled me out of the field for good.','bad')}}}),false,['lock','teal']))),false,['lock','teal']);
+   api.item('Visit the tech lab','Get issued a new gadget',null,act('',()=>{if(!limit('lab',1,'The lab has nothing new this year.'))return;const g=GADGETS.find(x=>!s.gadgets.includes(x));if(!g){toast('You already have every gadget.');return}s.gadgets.push(g);L(`The tech lab issued me a ${lc(g)}.`,'good')}),s.gadgets.length>=GADGETS.length,['bolt','blue']);
+   api.item('Lie low','Rebuild your cover',null,act('',()=>{if(!limit('agentlow',1,'You are already lying low.'))return;s.cover=Math.min(100,s.cover+20);L('I lay low and rebuilt my cover story.')}),false,['home','teal']);
+   if(s.rank>=3)api.item('Start a private intelligence firm','Leave the agency and go private',fmt(500e3),act('',()=>{if(!spend(500e3))return;S.biz.push(newBiz({id:'Private Intelligence Firm',rev:1.6e6,cost:500e3},`${s.code.replace('Agent ','')} Intelligence`));spEnd('I left the agency and founded a private intelligence firm.','good')},'close'),S.money<500e3,['briefcase','blue']);
+   api.item('Go rogue','Vanish with a briefcase of cash. They will hunt you.',null,act('',()=>{const v=R(2,8)*100e3;S.money+=v;S.flags.rogue=1;spEnd(`I went rogue and disappeared with ${fmt(v)}.`,'bad');if(C(.4)){st('health',-25);L('Agency operatives tracked me down. I barely survived.','bad')}},'close'),false,['mask','red']);
+ }};
+const FIGHT_STYLES=['brawler','wrestler','counter-striker'];
+SPX.fight={
+ entry:api=>api.item('Prize fighting','Train, fight, chase the belt. Ages 18–35.',null,()=>sheet('Pick a weight class',a=>['Flyweight','Bantamweight','Lightweight','Welterweight','Middleweight','Heavyweight'].forEach(c=>a.item(c,'',null,act('',()=>{if(S.stats.health<60){toast('You need health of 60%+ to fight.');return}startSp({kind:'fight',cls:c,skill:clamp(S.stats.health/2+R(5,25)),wins:0,losses:0,ko:0,rank:50,belt:0,defenses:0},`I started training as a ${c.toLowerCase()} fighter.`)},'close'),false,['dumbbell','red']))),!!S.sp||S.age<18||S.age>35,['dumbbell','red']),
+ title:s=>s.belt?`${s.cls} champion`:s.rank<=10?`#${s.rank} ${s.cls.toLowerCase()} contender`:s.wins+s.losses<3?'Rookie fighter':'Pro fighter',
+ year:s=>{if(S.age>30)s.skill=clamp(s.skill-R(1,4));if(S.age>=42)spEnd(`I retired from fighting with a record of ${s.wins}-${s.losses}.`,'good')},
+ menu:(api,s)=>{
+   api.html(`<div class="kv"><span>Weight class</span><span>${s.cls}</span><span>Record</span><span>${s.wins}-${s.losses} (${s.ko} KOs)</span><span>Ranking</span><span>${s.belt?'Champion':'#'+s.rank}</span><span>Fighting skill</span><span>${s.skill}%</span>${s.belt?`<span>Title defenses</span><span>${s.defenses}</span>`:''}</div>`);
+   api.item('Training camp','Sparring, conditioning, film study',fmt(5000),act('',()=>{if(!limit('camp',2,'Your coach says rest before the next camp.'))return;if(!spend(5000))return;if(C(.08)){st('health',-10);L('I got injured in sparring.','bad')}else{s.skill=clamp(s.skill+(s.skill>85?R(0,2):R(2,5)));L(`I finished a hard training camp. Skill: ${s.skill}%.`,'good')}}),S.money<5000,['dumbbell','green']);
+   api.item('Take a fight','Two fights a year',`${2-(S.acts.fight||0)} left`,()=>{
+     if(S.flags.fightAge!==S.age){S.flags.fightAge=S.age;const nm=()=>`${fname(C(.5)?'M':'F')} “${P(['The Hammer','Iceman','Lightning','The Viper','Bulldozer','Ghost','The Surgeon','Wildfire'])}” ${P(LAST)}`;
+       S.flags.opps=[['Easy',-15,0.5],['Even',0,1],['Tough',12,2]].map(([d,dx,m])=>({n:nm(),d,skill:clamp(Math.max(30,100-s.rank*1.2)+dx+R(-5,5)),style:P(FIGHT_STYLES),purse:Math.round((8e3+Math.pow(Math.max(1,51-s.rank),2)*150)*m)}));
+       if(s.rank<=3||s.belt)S.flags.opps.push({n:s.belt?'Mandatory challenger':'The reigning champion',d:'Title',skill:clamp(88+R(-4,6)),style:P(FIGHT_STYLES),purse:Math.round(1.5e6+S.fame*20e3),title:1})}
+     sheet('Fight offers',a=>S.flags.opps.forEach(o=>a.item(esc(o.n),`${o.d} fight · known as a ${o.style}`,fmt(o.purse),()=>{if(!limit('fight',2,'Your body needs time to heal.'))return;S.flags.opps=S.flags.opps.filter(x=>x!==o);
+       popup('Fight night',`You step into the cage against ${esc(o.n)}, a ${o.style}. What is your game plan?`,[['Stand and trade strikes','strike'],['Take it to the ground','grapple'],['Stay patient and counter','counter']].map(([l,plan])=>[l,()=>{
+         const beats={strike:'counter-striker',grapple:'brawler',counter:'wrestler'};const loses={strike:'wrestler',grapple:'counter-striker',counter:'brawler'};
+         const edge=beats[plan]===o.style?15:loses[plan]===o.style?-12:0;const me=s.skill+edge+R(-20,20),them=o.skill+R(-20,20);
+         if(me>them){s.wins++;const how=me-them>18?'knockout':plan==='grapple'&&C(.6)?'submission':'decision';if(how==='knockout')s.ko++;S.money+=o.purse;S.fame=clamp(S.fame+(o.title?10:o.d==='Tough'?4:2));st('happy',10);
+           if(o.title){if(s.belt)s.defenses++;s.belt=1;s.rank=1;L(s.defenses?`I defended my ${s.cls.toLowerCase()} title by ${how}!`:`I won the ${s.cls.toLowerCase()} championship belt by ${how}!`,'good')}
+           else{s.rank=Math.max(1,s.rank-R(3,10)*(o.d==='Tough'?2:1));L(`I beat ${o.n} by ${how} and earned ${fmt(o.purse)}.`,'good')}}
+         else{s.losses++;S.money+=Math.round(o.purse*0.4);st('health',-R(5,20));st('happy',-8);if(o.title&&s.belt){s.belt=0;s.rank=R(2,5);L(`I lost my belt to ${o.n}.`,'bad')}else{s.rank=Math.min(60,s.rank+R(2,6));L(`I lost to ${o.n}${them-me>18?' by knockout':' on the judges’ scorecards'}.`,'bad')}}}]))},false,['dumbbell','red'])))},false,['dumbbell','red']);
+   api.item('Trash-talk at a press conference','Sell the fight, make enemies',null,act('',()=>{if(!limit('trash',1,'Your manager confiscated your microphone.'))return;S.fame=clamp(S.fame+R(2,5));kar(-2);L('My trash talk at a press conference went viral.','good')}),false,['chat','orange']);
+ }};
+const FILM_GENRES=['Horror','Comedy','Drama','Action','Sci-fi','Romance','Animated','Documentary','Thriller','Musical'];
+const DIR_TIERS=['Film student','Indie director','Studio director','Acclaimed director','Legendary auteur'];
+SPX.director={
+ entry:api=>api.item('Film directing','From short films to blockbusters',null,act('',()=>startSp({kind:'director',skill:clamp(S.stats.smarts/4+R(10,30)),rep:0,films:[],awards:0},'I decided to become a film director.'),'close'),!!S.sp||S.age<14,['camera','purple']),
+ title:s=>DIR_TIERS[s.rep>=85?4:s.rep>=60?3:s.rep>=35?2:s.rep>=12?1:0],
+ year:s=>{const res=Math.round(s.films.reduce((a,f)=>a+f.gross,0)*0.001);if(res>1000){S.money+=res;L(`Royalties from my films paid ${fmt(res)}.`)}},
+ menu:(api,s)=>{
+   api.html(`<div class="kv"><span>Directing skill</span><span>${s.skill}%</span><span>Reputation</span><span>${s.rep}%</span><span>Films made</span><span>${s.films.length}</span><span>Awards</span><span>${s.awards}</span></div>`+
+     (s.films.length?`<div class="sec">Recent films</div><div class="kv">${s.films.slice(-5).reverse().map(f=>`<span>${esc(f.t)} (${f.g})</span><span>${fmt(f.gross)}</span>`).join('')}</div>`:''));
+   api.item('Shoot a short film','Festivals love a good short',fmt(3000),act('',()=>{if(!limit('short',2,'You are out of festival deadlines.'))return;if(!spend(3000))return;s.skill=clamp(s.skill+R(1,4));const q=s.skill+R(-20,20);if(q>70){s.rep=clamp(s.rep+5);L('My short film won a prize at a film festival!','good')}else{s.rep=clamp(s.rep+1);L('I shot a short film.')}}),S.money<3000,['camera','blue']);
+   api.item('Pitch a feature film','The studio pays. Your name is on the line.',null,()=>{if(!limit('feature',1,'You can only make one feature a year.'))return;sheet('Pick a genre',a=>FILM_GENRES.forEach(g=>a.item(g,'',null,()=>{
+     popup('Budget',`How big is your ${g.toLowerCase()} film?`,[['Micro budget ($200,000)',2e5,0],['Indie ($2 million)',2e6,10],['Studio ($40 million)',40e6,35],['Blockbuster ($200 million)',200e6,60]].map(([l,bud,need])=>[l+(s.rep<need?' (studio says no)':''),()=>{
+       if(s.rep<need){L(`The studio would not fund a ${fmt(bud)} film from me yet.`,'bad');return}
+       popup('Casting','Who will star in it?',[['Unknown actors',0,0],['A rising star',6,.1],['An A-list star',14,.25]].map(([cl,bonus,share])=>[cl,()=>{
+         const title=`${P(['The','A','Last','Beyond the','Under the','Return of the'])} ${P(['Silent','Crimson','Broken','Golden','Midnight','Forgotten','Electric','Hollow'])} ${P(['Harbor','Kingdom','Signal','Promise','Garden','Engine','Winter','Mirror'])}`;
+         const q=s.skill*0.6+bonus+R(-10,10)+R(-20,20)+15;const m=q>85?3+Math.random()*3:q>65?1.2+Math.random():q>45?0.5+Math.random()*0.7:Math.random()*0.5;
+         const gross=Math.round(bud*m);const fee=Math.round(bud*0.05+Math.max(0,gross-bud)*0.03);S.money+=fee;s.films.push({t:title,g,gross});s.skill=clamp(s.skill+2);s.rep=clamp(s.rep+Math.round((q-50)/9)+1);S.fame=clamp(S.fame+Math.max(0,Math.round((q-50)/10)));
+         L(`My ${g.toLowerCase()} film “${title}” ${m>=2?'was a smash hit':m>=1?'made money':'flopped'}, grossing ${fmt(gross)}. I earned ${fmt(fee)}.`,m>=1?'good':'bad');
+         if(q>82&&C(.45)){if(C(.4)){s.awards++;S.fame=clamp(S.fame+8);st('happy',20);L(`I won a Golden Reel Award for Best Director for “${title}”!`,'good')}else L(`I was nominated for Best Director for “${title}”.`,'good')}}]))}]))},false,['camera','purple'])))},false,['camera','purple']);
+   api.item('Direct a music video','Quick money, good exposure',null,act('',()=>{if(!limit('mv',1,'No more music video offers this year.'))return;const v=Math.round(R(20,100)*1000*(1+s.rep/30));S.money+=v;s.skill=clamp(s.skill+1);L(`I directed a music video for ${fmt(v)}.`,'good')}),false,['music','purple']);
+   if(s.rep>=50)api.item('Teach a masterclass','Share what you know',null,act('',()=>{if(!limit('master',1,'One masterclass a year.'))return;S.money+=50e3;kar(2);L('I taught a filmmaking masterclass.','good')}),false,['cap','blue']);
+ }};
+SPX.cult={
+ entry:api=>api.item('Start a movement','Gather followers around your big ideas. Can go very wrong.',null,act('',()=>startSp({kind:'cult',name:`The ${P(['Order','Fellowship','Circle','Society','Children','Assembly'])} of the ${P(['Quiet Dawn','Silver Orchard','Endless Tide','Seventh Lantern','Hollow Star','Golden Path','Gentle Storm'])}`,followers:3,devotion:60,scrutiny:0,commune:0,book:0},'I founded a movement and gathered my first followers.'),'close'),!!S.sp||S.age<21,['users','purple']),
+ title:s=>s.followers<50?'Self-styled guru':`Leader of ${s.name}`,
+ year:s=>{s.followers=Math.max(0,s.followers+Math.round(s.followers*(s.devotion-50)/200)+R(-2,5)+(s.commune?R(2,15):0));s.devotion=clamp(s.devotion+R(-6,3)+(s.commune?2:0));
+   const don=Math.round(s.followers*s.devotion*R(2,6));if(don){S.money+=don;L(`My followers donated ${fmt(don)} this year.`)}
+   s.scrutiny=clamp(s.scrutiny+Math.round(s.followers/400)+R(-3,3));
+   if(s.scrutiny>70&&C(.35))popup('Investigation','Federal investigators are looking into your movement’s finances.',[['Cooperate fully',()=>{s.scrutiny=clamp(s.scrutiny-35);s.followers=Math.round(s.followers*0.8);L('I cooperated with investigators. Some followers left.')}],['Flee the country',()=>{S.country=P(COUNTRIES.filter(c=>c!==S.country));spEnd(`I fled to ${S.country} and abandoned the movement.`,'bad')}],['Fight it in court ($200,000)',()=>{if(S.money>=200e3)S.money-=200e3;if(C(.5)){s.scrutiny=20;L('My lawyers got the investigation dropped.','good')}else{spEnd();arrest('I was convicted of fraud.',R(2,10))}}]])},
+ menu:(api,s)=>{
+   api.html(`<div class="kv"><span>Movement</span><span>${esc(s.name)}</span><span>Followers</span><span>${s.followers.toLocaleString()}</span><span>Devotion</span><span>${s.devotion}%</span><span>Public scrutiny</span><span>${s.scrutiny}%</span><span>Commune</span><span>${s.commune?'Built':'None'}</span></div>`);
+   api.item('Recruit on the street','Hand out pamphlets',null,act('',()=>{if(!limit('rec',2,'Your voice is hoarse. Recruit again next year.'))return;const n=Math.round(R(1,8)*(1+S.fame/40+S.stats.looks/100));s.followers+=n;L(`I recruited ${n} new follower${n>1?'s':''}.`)}),false,['users','purple']);
+   api.item('Post recruitment videos online','Reach thousands, attract attention',null,act('',()=>{if(!limit('vid',1,'You have posted enough this year.'))return;const n=R(5,60)+Math.round(S.followers/2000);s.followers+=n;s.scrutiny=clamp(s.scrutiny+3);S.followers+=n*20;L(`My videos brought in ${n} new followers.`)}),false,['camera','pink']);
+   api.item('Hold a gathering','Songs, speeches, candles',null,act('',()=>{if(!limit('gather',2,'Your followers need rest.'))return;s.devotion=clamp(s.devotion+R(4,9));L('I held a moving gathering for my followers.','good')}),false,['star','gold']);
+   api.item('Ask for donations','Money now, devotion later',null,act('',()=>{if(!limit('ask',1,'Asking twice would look bad.'))return;const v=Math.round(s.followers*R(50,300)*s.devotion/100);S.money+=v;s.devotion=clamp(s.devotion-5);s.scrutiny=clamp(s.scrutiny+5);L(`My followers gave ${fmt(v)} in donations.`)}),s.followers<5,['coin','gold']);
+   api.item('Build a commune','Land, cabins and a meeting hall',fmt(500e3),act('',()=>{if(!spend(500e3))return;s.commune=1;s.devotion=clamp(s.devotion+10);L(`I built a commune for ${s.name}.`,'good')}),!!s.commune||S.money<500e3,['home','green']);
+   api.item('Write your sacred book','Your ideas, bound in leather',null,act('',()=>{s.book=1;S.fame=clamp(S.fame+5);s.followers+=Math.round(s.followers*0.2)+10;S.money+=R(10,80)*1000;L('I wrote the founding book of my movement. It became a cult bestseller.','good')}),!!s.book,['book','purple']);
+   api.item('Perform a “miracle”','A carefully staged one. Risky.',null,act('',()=>{if(!limit('miracle',1,'Miracles should be rare.'))return;if(C(.6)){s.followers=Math.round(s.followers*1.3)+5;s.devotion=clamp(s.devotion+10);L('My followers witnessed a “miracle.” The movement grew.','good')}else{s.followers=Math.round(s.followers*0.6);s.scrutiny=clamp(s.scrutiny+20);S.fame=clamp(S.fame+3);L('A journalist exposed my staged “miracle” as a trick.','bad')}}),false,['star','purple']);
+   api.item('Disband the movement','Let everyone go home',null,act('',()=>{kar(5);spEnd(`I disbanded ${s.name}.`)},'close'),false,['clock','purple']);
+ }};
+/* ---------- zoo ---------- */
+const SPECIES=[['Capybara',5e3,2e3,3],['Meerkat',3e3,1e3,3],['Flamingo',4e3,1.5e3,3],['Penguin',8e3,3e3,5],['Sloth',15e3,3e3,4],['Kangaroo',20e3,4e3,4],['Red panda',25e3,5e3,6],['Zebra',30e3,6e3,4],['Crocodile',30e3,6e3,5,1],['Sea lion',35e3,8e3,5],['Koala',40e3,9e3,6],['Komodo dragon',50e3,8e3,6,1],['Giraffe',60e3,12e3,7],['Lion',80e3,15e3,8,1],['Tiger',90e3,16e3,8,1],['Okapi',90e3,12e3,6],['Snow leopard',120e3,18e3,8,1],['Hippo',120e3,20e3,7,1],['Orangutan',130e3,18e3,7],['Gorilla',150e3,22e3,8,1],['Rhino',160e3,25e3,8,1],['Polar bear',180e3,30e3,9,1],['Elephant',200e3,35e3,10],['Giant panda',1e6,60e3,12]];
+const ZOO_UPS=[['Petting zoo',150e3,1.08],['Aquarium wing',2e6,1.25],['Safari train',1.5e6,1.18],['Night safari tours',600e3,1.12],['Butterfly house',300e3,1.06]];
+const zooCount=z=>Object.values(z.animals).reduce((a,b)=>a+b,0);
+function zooMenu(){if(!S.zoo){sheet('Open a zoo',api=>{api.sub('Land, enclosures, permits and a front gate cost about $2,000,000. Then you collect animals, hire keepers and sell tickets.');
+  api.item('Open your zoo','',fmt(2e6),act('',()=>{if(!spend(2e6))return;S.zoo={name:`${S.last} Wildlife Park`,animals:{},keepers:1,rating:55,price:'standard',ups:{}};L(`I opened ${S.zoo.name}!`,'good');st('happy',10)},'back'),S.money<2e6,['paw','green'])});return}
+  sheet(S.zoo.name,api=>{const z=S.zoo;if(!z){api.sub('You no longer own a zoo.');return}const n=zooCount(z),need=Math.max(1,Math.ceil(n/6));
+    api.html(`<div class="kv"><span>Animals</span><span>${n} (${Object.keys(z.animals).length} species)</span><span>Keepers</span><span>${z.keepers} (need ${need})</span><span>Visitor rating</span><span>${z.rating}%</span><span>Tickets</span><span>${z.price}</span>${z.last?`<span>Visitors last year</span><span>${z.last.v.toLocaleString()}</span><span>Profit last year</span><span>${fmt(z.last.p)}</span>`:''}</div>`);
+    if(n){api.sec('Your animals');Object.entries(z.animals).forEach(([sp,c])=>api.item(`${sp} ×${c}`,'Sell one to another zoo for 70%',fmt(Math.round(SPECIES.find(x=>x[0]===sp)[1]*0.7)),act('',()=>{z.animals[sp]--;if(!z.animals[sp])delete z.animals[sp];S.money+=Math.round(SPECIES.find(x=>x[0]===sp)[1]*0.7);L(`I sold a ${lc(sp)} to another zoo.`)}),false,['paw','orange']))}
+    api.sec('Grow the zoo');
+    api.item('Buy animals',`${SPECIES.length} species available`,null,()=>sheet('Animal dealers',a=>{a.sub(`You have ${fmt(S.money)}. Popular animals draw more visitors. Dangerous ones need enough keepers.`);
+      SPECIES.forEach(([sp,pr,up,ap,dg])=>a.item(sp+(dg?' <span class="pill bad">Dangerous</span>':''),`Draw ${ap}/12 · upkeep ${fmt(up)}/yr`,fmt(pr),act('',()=>{if(!spend(pr))return;z.animals[sp]=(z.animals[sp]||0)+1;L(`${z.name} welcomed a new ${lc(sp)}.`,'good')}),S.money<pr,['paw','green']))}),false,['paw','green']);
+    api.item('Start a breeding program','Baby animals draw huge crowds',null,act('',()=>{if(!limit('breed',1,'One breeding program a year.'))return;const pairs=Object.entries(z.animals).filter(([,c])=>c>=2);if(!pairs.length){toast('You need at least two of a species.');return}const [sp]=P(pairs);if(C(.5)){z.animals[sp]++;z.rating=clamp(z.rating+6);S.fame=clamp(S.fame+1);L(`A baby ${lc(sp)} was born at ${z.name}!`,'good')}else L(`The ${lc(sp)} breeding program had no luck this year.`)}),false,['baby','orange']);
+    ZOO_UPS.forEach(([u,c,m])=>api.item(`Build: ${u}`,z.ups[u]?'Built':`Draws ${Math.round((m-1)*100)}% more visitors`,z.ups[u]?null:fmt(c),act('',()=>{if(!spend(c))return;z.ups[u]=1;z.rating=clamp(z.rating+4);L(`${z.name} opened a new ${lc(u)}.`,'good')}),!!z.ups[u]||S.money<c,['home','green']));
+    api.sec('Running the zoo');
+    api.item('Hire a keeper','$45,000 a year',null,act('',()=>{z.keepers++;L(`I hired keeper #${z.keepers} at ${z.name}.`)}),false,['users','blue']);
+    api.item('Let a keeper go','',null,act('',()=>{z.keepers--;L(`I let a keeper go at ${z.name}.`)}),z.keepers<=1,['users','red']);
+    api.item('Ticket prices',`Now: ${z.price}`,null,()=>sheet('Ticket prices',a=>[['cheap','Cheap ($15)'],['standard','Standard ($25)'],['premium','Premium ($40)']].forEach(([k,l])=>a.item(l+(z.price===k?' <span class="pill">Current</span>':''),'',null,act('',()=>{z.price=k;L(`I set ${z.name}'s ticket prices to ${k}.`)},'back'),false,['tag','gold']))),false,['tag','gold']);
+    api.item('Run a school education program','Kids learn, reviews improve',fmt(20e3),act('',()=>{if(!limit('edu',1,'The program is already running this year.'))return;if(!spend(20e3))return;z.rating=clamp(z.rating+5);kar(3);L(`${z.name} launched a school education program.`,'good')}),S.money<20e3,['cap','blue']);
+    api.item('Sell the zoo',`About ${fmt(zooValue(z))}`,null,act('',()=>{S.money+=zooValue(z);L(`I sold ${z.name} for ${fmt(zooValue(z))}.`,'good');S.zoo=null},'back'),false,['coin','green']);
+  });}
+const zooValue=z=>Math.round(1.6e6+Object.entries(z.animals).reduce((a,[sp,c])=>a+SPECIES.find(x=>x[0]===sp)[1]*c*0.8,0)+Object.keys(z.ups).reduce((a,u)=>a+ZOO_UPS.find(x=>x[0]===u)[1]*0.6,0));
+function zooYear(){const z=S.zoo;if(!z)return;const n=zooCount(z),need=Math.max(1,Math.ceil(n/6));
+  let draw=0,upkeep=0,danger=0;Object.entries(z.animals).forEach(([sp,c])=>{const d=SPECIES.find(x=>x[0]===sp);draw+=d[3]*c;upkeep+=d[2]*c;if(d[4])danger+=c});
+  const upM=Object.keys(z.ups).reduce((a,u)=>a*ZOO_UPS.find(x=>x[0]===u)[2],1);const pf=z.price==='cheap'?1.25:z.price==='premium'?0.8:1;const tk=z.price==='cheap'?15:z.price==='premium'?40:25;
+  const v=Math.round(Math.pow(Math.max(draw,1),0.8)*520*(z.rating/60)*pf*upM*(0.85+Math.random()*0.3));
+  const p=v*tk+v*6-upkeep-z.keepers*45e3-150e3;S.money+=p;z.last={v,p};
+  z.rating=clamp(z.rating+(z.keepers>=need?1:-6)+(z.price==='cheap'?1:z.price==='premium'?-1:0)+R(-3,3));
+  L(`${z.name} welcomed ${v.toLocaleString()} visitors and ${p>=0?'made':'lost'} ${fmt(Math.abs(p))}.`,p>=0?'good':'bad');
+  if(danger&&z.keepers<need&&C(.2)){z.rating=clamp(z.rating-15);S.money-=100e3;L(`A dangerous animal escaped from ${z.name}. The fines cost $100,000.`,'bad')}}
+/* ---------- museum ---------- */
+const museumItems=()=>S.assets.filter(a=>['art','collect','classic','jewel','watch'].includes(a.type));
+function museumMenu(){if(!S.museum){sheet('Open a museum',api=>{api.sub('Buy and fit out a building for about $1,000,000. Then display your art, collectibles and classic cars, and sell tickets.');
+  api.item('Open your museum','',fmt(1e6),act('',()=>{if(!spend(1e6))return;S.museum={name:`The ${S.last} Collection`,rating:55,security:0};L(`I opened ${S.museum.name}, a private museum.`,'good')},'back'),S.money<1e6,['book','purple'])});return}
+  sheet(S.museum.name,api=>{const m=S.museum;if(!m){api.sub('You no longer own a museum.');return}const shown=museumItems().filter(a=>a.displayed);const val=shown.reduce((a,x)=>a+x.value,0);
+    api.html(`<div class="kv"><span>Pieces on display</span><span>${shown.length}</span><span>Value on display</span><span>${fmt(val)}</span><span>Visitor rating</span><span>${m.rating}%</span><span>Security</span><span>${m.security?'Upgraded':'Basic'}</span>${m.last?`<span>Visitors last year</span><span>${m.last.v.toLocaleString()}</span><span>Profit last year</span><span>${fmt(m.last.p)}</span>`:''}</div>`);
+    api.sec('Your collection');const items=museumItems();if(!items.length)api.sub('You have nothing to display yet. Buy art, collectibles or classic cars at the gallery, auction house or black market.');
+    items.forEach(a=>api.item(esc(a.name)+(a.displayed?' <span class="pill">On display</span>':''),a.displayed?'Tap to put in storage':'Tap to display',fmt(a.value),act('',()=>{a.displayed=!a.displayed;L(a.displayed?`I put ${lc(a.name)} on display.`:`I moved ${lc(a.name)} into storage.`)}),false,['brush','purple']));
+    api.sec('Running the museum');
+    api.item('Host a special exhibition','Big crowds this year',fmt(100e3),act('',()=>{if(!limit('exhib',1,'One special exhibition a year.'))return;if(!spend(100e3))return;m.special=S.age;m.rating=clamp(m.rating+6);L(`${m.name} opened a special exhibition.`,'good')}),S.money<100e3,['star','gold']);
+    api.item('Upgrade security','Cameras, guards and laser alarms',fmt(250e3),act('',()=>{if(!spend(250e3))return;m.security=1;L(`I upgraded security at ${m.name}.`,'good')}),!!m.security||S.money<250e3,['lock','teal']);
+    api.item('Run school field trips','Free entry for students',null,act('',()=>{if(!limit('trips',1,'Field trips are booked for the year.'))return;m.rating=clamp(m.rating+4);kar(3);L(`${m.name} welcomed school field trips for free.`,'good')}),false,['cap','blue']);
+    api.item('Sell the museum building','Your collection stays with you',fmt(800e3),act('',()=>{S.money+=800e3;museumItems().forEach(a=>a.displayed=false);L(`I sold the ${m.name} building.`);S.museum=null},'back'),false,['coin','green']);
+  });}
+function museumYear(){const m=S.museum;if(!m)return;const shown=museumItems().filter(a=>a.displayed);const val=shown.reduce((a,x)=>a+x.value,0);
+  const v=Math.round(Math.sqrt(val)*R(8,14)*(m.rating/60)*(m.special===S.age-1?1.4:1));const p=v*24-120e3-Math.round(val*0.01);S.money+=p;m.last={v,p};m.rating=clamp(m.rating+R(-3,3));
+  L(`${m.name} had ${v.toLocaleString()} visitors and ${p>=0?'made':'lost'} ${fmt(Math.abs(p))}.`,p>=0?'good':'bad');
+  if(shown.length&&!m.security&&C(.05)){const a=P(shown);S.assets=S.assets.filter(x=>x!==a);L(`Thieves broke into ${m.name} and stole ${lc(a.name)}!`,'bad')}}
+/* ---------- black market ---------- */
+const CONTRABAND=[['Smuggled ancient statue','collect',200e3,1e6,.35],['A painting stolen decades ago','art',500e3,5e6,.25],['Fossil dug up without permits','collect',100e3,600e3,.4],['Unregistered gold bars','collect',100e3,400e3,.6],['Meteorite from a protected site','collect',50e3,300e3,.45],['Looted temple mask','collect',150e3,900e3,.3],['Smuggled rare-earth coins','collect',30e3,200e3,.4],['Lost royal crown jewel','jewel',400e3,3e6,.3]];
+function blackMarket(){
+  if(S.flags.bmAge!==S.age){S.flags.bmAge=S.age;S.flags.bm=CONTRABAND.slice().sort(()=>Math.random()-.5).slice(0,4).map(([n,t,lo,hi,f])=>{const v=R(lo/1000,hi/1000)*1000;return{n,t,v,p:Math.round(v*f*(0.8+Math.random()*0.4)/1000)*1000}})}
+  sheet('Black market',api=>{api.sub('Rare things at a fraction of their value. All of it is illegal. Each year the police may find what you own, seize it and arrest you.');
+    if(S.zoo)api.item('Smuggled exotic animal','Goes straight to your zoo',fmt(60e3),act('',()=>{if(!limit('bmanimal',1,'The animal smuggler has left town.'))return;if(!spend(60e3))return;const d=P(SPECIES.filter(x=>x[4]));S.zoo.animals[d[0]]=(S.zoo.animals[d[0]]||0)+1;kar(-6);S.flags.hotZoo=1;L(`I bought a smuggled ${lc(d[0])} for my zoo.`)}),S.money<60e3,['paw','red']);
+    if(!S.flags.bm.length)api.sub('The dealer is out of stock until next year.');
+    S.flags.bm.forEach(o=>api.item(esc(o.n),`Real value maybe ${fmt(o.v*0.8)}–${fmt(o.v*1.2)}`,fmt(o.p),act('',()=>{if(!spend(o.p))return;S.assets.push({id:uid(),type:o.t,name:o.n,value:o.v,price:o.p,hot:1});S.flags.bm=S.flags.bm.filter(x=>x!==o);kar(-5);L(`I bought ${lc(o.n)} on the black market.`)}),S.money<o.p,['mask','red']));
+  });}
+function contrabandYear(){const hot=S.assets.filter(a=>a.hot);if((hot.length||S.flags.hotZoo)&&C(.07)){S.assets=S.assets.filter(a=>!a.hot);S.flags.hotZoo=0;L('Police raided my home and seized my black-market goods.','bad');if(C(.45))arrest('I was charged with trafficking in stolen goods.',R(1,6))}}
+/* ---------- landlord ---------- */
+const newTenant=()=>({name:`${fname(C(.5)?'M':'F')} ${P(LAST)}`,rel:R(30,95),mood:60});
+function landlordYear(a){
+  if(!a.tenant){if(a.pm&&C(.8)){a.tenant=newTenant();L(`My property manager found a new tenant for my ${lc(a.name)}.`)}else{L(`My ${lc(a.name)} sat empty this year.`,'bad');return 0}}
+  const t=a.tenant,rate=a.rent==='low'?.04:a.rent==='high'?.07:.055;let r=Math.round(a.value*rate);
+  if(C((100-t.rel)/300)){r=Math.round(r*R(0,6)/10);L(`${t.name} fell behind on rent for my ${lc(a.name)}.`,'bad')}
+  if(a.pm)r=Math.round(r*0.92);
+  t.mood=clamp(t.mood+(a.rent==='high'?-6:a.rent==='low'?4:0)+R(-4,3)-(a.repair?8:0));
+  if(C(.3)){if(a.pm){r-=Math.round(a.value*0.01);t.mood=clamp(t.mood+3)}else if(!a.repair){a.repair=P(['a leaking roof','a broken boiler','a cracked window','a clogged drain','faulty wiring']);L(`My tenant at ${lc(a.name)} reported ${a.repair}.`)}}
+  if(C(.06)){const d=Math.round(a.value*0.03);r-=d;L(`Tenants damaged my ${lc(a.name)}. Repairs cost ${fmt(d)}.`,'bad')}
+  if(t.mood<25&&C(.5)){L(`${t.name} moved out of my ${lc(a.name)}.`,'bad');a.tenant=null;a.repair=null}
+  a.rentTotal=(a.rentTotal||0)+r;return r;
+}
+function tenantMenu(id){sheet('Tenant',api=>{const a=S.assets.find(x=>x.id===id);if(!a||!a.rented){api.sub('This property is not rented out.');return}const t=a.tenant;
+  stack[stack.length-1].title=`Renting: ${a.name}`;
+  api.html(`<div class="kv"><span>Tenant</span><span>${t?esc(t.name):'Vacant'}</span>${t?`<span>Pays on time</span><span>${t.rel}%</span><span>Tenant happiness</span><span>${t.mood}%</span>`:''}<span>Rent level</span><span>${a.rent||'market'}</span><span>Property manager</span><span>${a.pm?'Yes (8% of rent)':'No'}</span>${a.repair?`<span>Open repair</span><span>${esc(a.repair)}</span>`:''}<span>Rent collected</span><span>${fmt(a.rentTotal||0)}</span></div>`);
+  if(!t)api.item('Find a tenant','Choose from three applicants',null,()=>{const apps=[newTenant(),newTenant(),newTenant()];sheet('Applicants',x=>apps.forEach(ap=>x.item(esc(ap.name),`Pays on time: ${ap.rel}%`,null,act('',()=>{a.tenant=ap;L(`${ap.name} moved into my ${lc(a.name)}.`,'good')},'back'),false,['users','blue'])))},false,['users','blue']);
+  api.item('Set the rent',`Now: ${a.rent||'market'}`,null,()=>sheet('Rent level',x=>[['low','Below market (4%)','Happy tenants who stay'],['market','Market rate (5.5%)','Balanced'],['high','Above market (7%)','More money, unhappy tenants']].forEach(([k,l,d])=>x.item(l+((a.rent||'market')===k?' <span class="pill">Current</span>':''),d,null,act('',()=>{a.rent=k;L(`I set the rent on my ${lc(a.name)} to ${l.toLowerCase()}.`)},'back'),false,['coin','gold']))),false,['coin','gold']);
+  if(a.repair)api.item(`Fix ${a.repair}`,'Keep your tenant happy',fmt(Math.round(a.value*0.01)),act('',()=>{if(!spend(Math.round(a.value*0.01)))return;L(`I fixed ${a.repair} at my ${lc(a.name)}.`);a.repair=null;if(t)t.mood=clamp(t.mood+10)}),S.money<a.value*0.01,['home','green']);
+  if(t)api.item('Check in on the tenant','A friendly visit',null,act('',()=>{if(!limit('visit'+a.id,1,'You already visited this year.'))return;t.mood=clamp(t.mood+6);L(`I checked in on ${t.name}.`)}),false,['chat','blue']);
+  if(t)api.item('Evict the tenant','Messy and unpopular',null,act('',()=>{kar(-3);L(`I evicted ${t.name} from my ${lc(a.name)}.`,'bad');a.tenant=null;a.repair=null}),false,['alert','red']);
+  api.item(a.pm?'Fire the property manager':'Hire a property manager','Handles repairs and finds tenants for 8% of rent',null,act('',()=>{a.pm=!a.pm;L(a.pm?`I hired a property manager for my ${lc(a.name)}.`:`I fired the property manager for my ${lc(a.name)}.`)}),false,['briefcase','blue']);
+});}
+const EXCLUSIVE=[['Lighthouse on a sea cliff',1.2e6],['Converted church loft',1.6e6],['Treehouse estate',2.2e6],['Underground luxury bunker',4.5e6],['Floating house on a lake',1.9e6],['Glass house in the forest',3.1e6],['Former embassy mansion',9e6],['Clifftop villa',7.5e6],['Private ski chalet',6e6],['Mountain castle with a moat',22e6],['Penthouse with a rooftop pool',12e6],['Restored windmill',900e3]];
+function exclusiveHomes(api){if(S.flags.exAge!==S.age){S.flags.exAge=S.age;S.flags.ex=EXCLUSIVE.slice().sort(()=>Math.random()-.5).slice(0,3).map(([n,p])=>({n,p:Math.round(p*(0.9+Math.random()*0.3)/1000)*1000}))}
+  api.sec('Exclusive one-of-a-kind homes');S.flags.ex.forEach(h=>api.item(h.n,'Cash only. Rare homes hold their value.',fmt(h.p),act('',()=>{const a=buy('house',h.n,h.p);if(a){a.excl=1;S.flags.ex=S.flags.ex.filter(x=>x!==h)}}),S.money<h.p,['home','gold']))}
+/* ---------- VIP lifestyle ---------- */
+const VIP_STAFF=[['Personal chef',80e3,{health:2}],['Personal trainer',60e3,{health:2,looks:1}],['Butler',70e3,{happy:2}],['Chauffeur',55e3,{happy:1},'car'],['Bodyguard',90e3,{happy:1}],['Personal assistant',65e3,{happy:1,smarts:1}],['Stylist',50e3,{looks:2}],['Private doctor',150e3,{health:3}],['Private pilot',200e3,{happy:2},'air'],['Yacht captain',180e3,{happy:2},'boat'],['Gardener',35e3,{happy:1},'house'],['Nanny',45e3,{happy:2},'kids']];
+const VIP_CLUBS=[['Country club',100e3,20e3],['Private members’ club',250e3,40e3],['Yacht club',150e3,30e3,'boat'],['Supercar owners’ club',50e3,15e3,'car'],['Billionaires’ roundtable',1e6,100e3,'billion']];
+const VIP_SPLURGE=[['Throw a party on a private island',500e3,{happy:10},3],['Hire a famous band for your birthday',1e6,{happy:12},2],['Name a star after yourself',10e3,{happy:3},0],['Rent an entire theme park for a day',2e6,{happy:15},3],['Buy a box at the opera for the season',200e3,{happy:5,smarts:2},1],['Fly to Paris just for dinner',30e3,{happy:6},0],['Commission a portrait of yourself',50e3,{happy:4},0],['Charter a superyacht for a month',800e3,{happy:12},2]];
+const vipHas=req=>!req||(req==='kids'?kids().some(k=>k.age<13):req==='billion'?netWorth()>=1e9:S.assets.some(a=>a.type===req));
+function vipMenu(){S.vip=S.vip||{staff:[],clubs:[]};sheet('VIP lifestyle',api=>{const v=S.vip;
+  const cost=v.staff.reduce((a,n)=>a+VIP_STAFF.find(x=>x[0]===n)[1],0)+v.clubs.reduce((a,n)=>a+VIP_CLUBS.find(x=>x[0]===n)[2],0);
+  api.sub(`Your staff and memberships cost ${fmt(cost)} a year.`);
+  api.sec('Household staff');VIP_STAFF.forEach(([n,c,fx,req])=>{const has=v.staff.includes(n);api.item(n+(has?' <span class="pill">Hired</span>':''),`${Object.entries(fx).map(([k,x])=>`+${x} ${k}`).join(', ')} a year${req&&!vipHas(req)?` · needs ${req==='kids'?'young kids':req==='house'?'a house':req==='air'?'an aircraft':req==='boat'?'a boat':'a car'}`:''}`,fmt(c)+'/yr',act('',()=>{if(has){v.staff=v.staff.filter(x=>x!==n);L(`I let my ${lc(n)} go.`)}else{v.staff.push(n);L(`I hired a ${lc(n)}.`,'good')}}),!has&&!vipHas(req),['users','gold'])});
+  api.sec('Exclusive clubs');VIP_CLUBS.forEach(([n,join,fee,req])=>{const has=v.clubs.includes(n);api.item(n+(has?' <span class="pill">Member</span>':''),has?`${fmt(fee)}/yr · tap to leave`:`Join for ${fmt(join)}, then ${fmt(fee)}/yr${req==='billion'?' · billionaires only':''}`,null,act('',()=>{if(has){v.clubs=v.clubs.filter(x=>x!==n);L(`I left the ${lc(n)}.`);return}if(!spend(join))return;v.clubs.push(n);S.fame=clamp(S.fame+1);L(`I joined the ${lc(n)}.`,'good')}),!has&&(!vipHas(req)||S.money<join),['crown','gold'])});
+  api.sec('Splurge');VIP_SPLURGE.forEach(([n,c,fx,fame])=>api.item(n,'',fmt(c),act('',()=>{if(!limit('spl'+n,1,'Once a year is extravagant enough.'))return;if(!spend(c))return;Object.entries(fx).forEach(([k,x])=>st(k,x));S.fame=clamp(S.fame+fame);if(n.includes('portrait'))S.assets.push({id:uid(),type:'art',name:`Portrait of ${S.name}`,value:Math.round(c*0.6),price:c});L(`I ${lc(n)}.`,'good')}),S.money<c,['gem','gold']));
+});}
+function vipYear(){const v=S.vip;if(!v)return;let cost=0;const fx={};
+  v.staff=v.staff.filter(n=>{const d=VIP_STAFF.find(x=>x[0]===n);if(!vipHas(d[3]))return false;cost+=d[1];Object.entries(d[2]).forEach(([k,x])=>fx[k]=(fx[k]||0)+x);return true});
+  v.clubs.forEach(n=>{const d=VIP_CLUBS.find(x=>x[0]===n);cost+=d[2];fx.happy=(fx.happy||0)+1});
+  Object.entries(fx).forEach(([k,x])=>st(k,Math.min(4,x)));S.money-=cost;
+  if(v.clubs.length&&C(.2)){if(!partner()&&S.age>=18&&C(.4)){const g=S.flags.pref||(he()?'F':'M');const p=person('Partner',clamp(S.age+R(-6,6),18,99),g);p.money=R(5,50)*1e6;S.people.push(p);L(`I met ${p.name} at my club and we started dating.`,'good')}else{const f=person('Friend',S.age,C(.5)?'M':'F');f.money=R(1,30)*1e6;S.people.push(f);L(`I befriended ${f.name}, a wealthy member of my club.`,'good')}}
+  if(v.clubs.includes('Billionaires’ roundtable'))S.biz.forEach(b=>b.rating=clamp(b.rating+2));
+  if(cost)L(`My staff and memberships cost ${fmt(cost)} this year.`)}
+/* ---------- investing: bonds, gold, angel investing ---------- */
+const inv2=()=>S.inv2||(S.inv2={gov:0,corp:0,junk:0,gold:0,angel:[]});
+const inv2Value=()=>{const v=inv2();return v.gov+v.corp+v.junk+v.gold+v.angel.reduce((a,x)=>a+x.amt,0)};
+function investMenu(){sheet('Bonds, gold & startups',api=>{const v=inv2();
+  api.html(`<div class="kv"><span>Government bonds</span><span>${fmt(v.gov)}</span><span>Corporate bonds</span><span>${fmt(v.corp)}</span><span>High-yield bonds</span><span>${fmt(v.junk)}</span><span>Gold</span><span>${fmt(v.gold)}</span><span>Startup stakes</span><span>${v.angel.length} (${fmt(v.angel.reduce((a,x)=>a+x.amt,0))})</span></div>`);
+  api.sec('Bonds pay interest every year');
+  [['gov','Government bonds','3.5% a year, very safe'],['corp','Corporate bonds','6% a year, small default risk'],['junk','High-yield bonds','11% a year, real default risk']].forEach(([k,n,d])=>{
+    [1e4,1e5,1e6].forEach(amt=>api.item(`Buy ${fmt(amt)} of ${lc(n)}`,d,null,act('',()=>{if(!spend(amt))return;v[k]+=amt;L(`I bought ${fmt(amt)} of ${lc(n)}.`)}),S.money<amt,['chart','green']));
+    api.item(`Sell all ${lc(n)}`,'',fmt(v[k]),act('',()=>{S.money+=v[k];L(`I sold ${fmt(v[k])} of ${lc(n)}.`);v[k]=0}),!v[k],['coin','gold'])});
+  api.sec('Gold moves with fear and inflation');
+  [1e4,1e5,1e6].forEach(amt=>api.item(`Buy ${fmt(amt)} of gold`,'',null,act('',()=>{if(!spend(amt))return;v.gold+=amt;L(`I bought ${fmt(amt)} of gold.`)}),S.money<amt,['coin','gold']));
+  api.item('Sell all gold','',fmt(v.gold),act('',()=>{S.money+=v.gold;L(`I sold ${fmt(v.gold)} of gold.`);v.gold=0}),!v.gold,['coin','gold']);
+  api.sec('Angel investing');
+  if(S.flags.pitchAge!==S.age){S.flags.pitchAge=S.age;S.flags.pitches=[0,1,2].map(()=>({n:`${P(['Orbit','Kind','Pocket','Nova','Loop','Bright','Tandem','Ember','Quill','Atlas'])}${P(['ly','Labs','Hub','Works','AI','Pay','Health','Go','Box','Mint'])}`,what:P(['food delivery by drone','an app for dog walkers','AI tutoring for kids','lab-grown leather','a budgeting app for teens','modular tiny homes','a smart bike lock','plant-based seafood','a dating app for gamers','solar roof tiles']),ask:R(25,250)*1000}))}
+  S.flags.pitches.forEach(pt=>api.item(`${pt.n}: ${pt.what}`,'Most startups fail. A few return 10× or more.',fmt(pt.ask),act('',()=>{if(!spend(pt.ask))return;v.angel.push({n:pt.n,amt:pt.ask,y:0});S.flags.pitches=S.flags.pitches.filter(x=>x!==pt);L(`I invested ${fmt(pt.ask)} in a startup called ${pt.n}.`)}),S.money<pt.ask,['bolt','orange']));
+});}
+function inv2Year(){const v=S.inv2;if(!v)return;let interest=Math.round(v.gov*.035+v.corp*.06+v.junk*.11);
+  if(v.corp&&C(.02)){L(`A company defaulted on its bonds. I lost ${fmt(v.corp*0.4)}.`,'bad');v.corp=Math.round(v.corp*0.6)}
+  if(v.junk&&C(.07)){L(`A high-yield bond defaulted. I lost ${fmt(v.junk*0.6)}.`,'bad');v.junk=Math.round(v.junk*0.4)}
+  if(interest){S.money+=interest;L(`My bonds paid ${fmt(interest)} in interest.`,'good')}
+  if(v.gold)v.gold=Math.round(v.gold*(1+R(-10,14)/100));
+  v.angel=v.angel.filter(x=>{x.y++;if(C(.13)||x.y>10){L(`${x.n}, a startup I backed, shut down.`,'bad');return false}if(C(.04+x.y*0.01)){const m=P([2,3,3,5,8,15,40]);const out=x.amt*m;S.money+=out;L(`${x.n} was acquired! My stake paid out ${fmt(out)} (${m}×).`,'good');return false}return true})}
+/* ---------- casino business ---------- */
+BIZ.push({id:'Card Room',cat:'Fun & fitness',cost:400e3,rev:600e3,vol:1.2},{id:'Casino',cat:'Fun & fitness',cost:20e6,rev:24e6,vol:1.3},{id:'Casino Resort',cat:'Empires',cost:400e6,rev:420e6,vol:1.3});
+['Card Room','Casino','Casino Resort'].forEach(t=>BIZ_KIND[t]='casino');
+OPS.casino=[
+ ['Open a high-roller VIP room','Whales bring big money and big swings',10,b=>upg(b,'vip',1.2,1.03,`${b.name} opened a high-roller VIP room.`),{once:'vip'}],
+ ['Book a headline show','Packed weekends all year',5,b=>{yr(b,1.15);S.fame=clamp(S.fame+1);L(`${b.name} booked a headline show residency.`,'good')},{lim:1,only:['Casino','Casino Resort']}],
+ ['Add a sportsbook','Bets on every game',6,b=>upg(b,'book',1.12,1.02,`${b.name} opened a sportsbook.`),{once:'book'}],
+ ['Loosen the slot machines','Players win more and come back',0,b=>{b.rating=clamp(b.rating+8);b.revMult*=.97;L(`${b.name} loosened its slot machines.`)},{lim:1}],
+ ['Tighten the house edge','More profit, grumpier players',0,b=>{b.rating=clamp(b.rating-6);b.revMult*=1.04;L(`${b.name} tightened its house edge.`)},{lim:1}],
+ ['Upgrade surveillance','Catch card counters and cheats',4,b=>{b.up.safe=1;L(`${b.name} upgraded its eye-in-the-sky cameras.`,'good')},{once:'surv'}],
+ ['Comp a whale’s stay','A free suite for a big spender',1,b=>gamble(b,.6,()=>{yr(b,1.2);L(`A whale lost millions at ${b.name}.`,'good')},()=>{yr(b,.88);L(`A whale won big against ${b.name}.`,'bad')}),{lim:1}],
+ ['Build a hotel tower','Rooms, restaurants and pools',25,b=>upg(b,'tower',1.3,1.05,`${b.name} opened a hotel tower.`),{once:'tower',only:['Casino','Casino Resort']}],
+ ['Host a poker championship','The best players in the world',3,b=>{yr(b,1.1);b.rating=clamp(b.rating+5);S.fame=clamp(S.fame+1);L(`${b.name} hosted a poker championship.`,'good')},{lim:1}],
+];
+/* ---------- outdoors and parties ---------- */
+const bear=()=>popup('Bear!','A huge bear wanders into your campsite and stands up on its hind legs.',[['Stand tall and make noise',()=>{if(C(.75))L('I made myself big and loud. The bear wandered off.','good');else{st('health',-20);L('A bear charged me. I survived with deep scratches.','bad')}}],['Play dead',()=>{if(C(.6))L('I played dead and the bear lost interest.');else{st('health',-25);L('The bear did not buy my act.','bad')}}],['Run!',()=>{if(C(.35))L('I outran a bear. I still cannot believe it.','good');else{st('health',-30);L('You cannot outrun a bear. I learned that the hard way.','bad')}}]]);
+const OUTDOORS=[
+ ['Go camping','Tent, campfire, s’mores',5,95,100,2,()=>{st('happy',5);st('health',1);if(C(.08))bear();else L(P(['I went camping and saw a sky full of stars.','I went camping. It rained the whole time.','I went camping and made perfect s’mores.']),'good')},['home','green']],
+ ['Backpack a long trail','A week on foot',14,75,400,1,()=>{st('health',4);st('happy',5);if(C(.1))bear();else L('I backpacked a long wilderness trail.','good')},['dumbbell','green']],
+ ['Visit a national park','Canyons, geysers, giant trees',4,100,60,1,()=>{st('happy',5);L(`I visited a national park and saw ${P(['a geyser erupt','giant redwoods','a canyon at sunset','a herd of bison','a glacier'])}.`,'good')},['globe','green']],
+ ['Go kayaking','Paddle a quiet river',8,85,60,1,()=>{st('health',2);st('happy',3);L('I kayaked down a quiet river.')},['boat','teal']],
+ ['Go whitewater rafting','Class IV rapids',14,70,150,1,()=>{if(C(.08)){st('health',-12);L('Our raft flipped in the rapids.','bad')}else{st('happy',7);L('I went whitewater rafting. What a rush!','good')}},['boat','blue']],
+ ['Go hunting (with a license)','Deer season',16,85,300,1,()=>{const r=Math.random();if(r<.4){st('happy',4);L('I went hunting and brought home a deer.')}else if(r<.95)L('I spent a cold dawn in a hunting blind and saw nothing.');else{st('health',-15);L('I had a hunting accident.','bad')}},['alert','orange']],
+ ['Forage for wild mushrooms','Delicious or deadly',14,100,0,1,()=>{if(C(.07)){st('health',-25);L('I ate a poisonous mushroom and ended up in the hospital.','bad')}else{st('happy',3);L('I foraged a basket of wild mushrooms.','good')}},['paw','green']],
+ ['Go ice fishing','A hole in the ice and patience',10,90,50,1,()=>{st('happy',3);L(C(.5)?'I caught a big pike ice fishing.':'I went ice fishing and caught nothing but a cold.')},['boat','teal']],
+ ['Ride horses on a ranch','Cowboy weekend',6,85,200,1,()=>{st('happy',5);if(C(.06)){st('health',-8);L('I was thrown from a horse.','bad')}else L('I spent a weekend riding horses on a ranch.','good')},['paw','orange']],
+ ['Stargaze in the desert','No lights for 100 miles',8,100,80,1,()=>{st('happy',5);st('smarts',1);L('I saw the Milky Way from the desert.','good')},['star','purple']],
+ ['Plant trees with a conservation group','Leave the world greener',8,100,0,1,()=>{kar(4);st('happy',3);L('I planted trees with a conservation group.','good')},['home','green']],
+ ['Survive a week alone in the wilderness','Just a knife and a flint',18,60,0,1,()=>{if(S.stats.health+R(0,40)>80){st('happy',8);st('health',3);L('I survived a week alone in the wilderness!','good')}else{st('health',-12);L('I had to be rescued from my wilderness survival trip.','bad')}},['alert','orange']],
+ ['Climb the world’s tallest peak','A two-month expedition. It can kill you.',20,65,60000,1,()=>{if(C(S.stats.health/150)){S.fame=clamp(S.fame+8);st('happy',20);L('I reached the summit of the world’s tallest mountain!','good')}else if(C(.2)){die('I died on the slopes of the world’s tallest mountain.')}else{st('health',-15);L('Frostbite and storms forced me to turn back below the summit.','bad')}},['plane','teal']],
+];
+SOCIAL.push(
+ ['Throw a themed costume party','Pirates? The 80s? Outer space?',16,90,500,1,()=>{friends().forEach(f=>f.bond=clamp(f.bond+6));st('happy',7);S.followers+=R(50,800);L(`I threw a ${P(['pirate','1980s','outer space','masquerade','murder mystery','tropical luau'])} party.`,'good')},['cake','pink']],
+ ['Go on a bar crawl','Seven bars, one night',21,60,150,1,()=>{st('happy',6);if(C(.25)){st('health',-3);L('I woke up after a bar crawl with no memory of the last three bars.','bad')}else L('I went on an epic bar crawl.','good')},['music','orange']],
+ ['Crash a celebrity party','Talk your way past the door',18,60,0,1,()=>{if(C(.35)){S.fame=clamp(S.fame+3);S.followers+=R(1e3,20e3);L('I crashed a celebrity party and took selfies with stars.','good')}else{st('happy',-3);L('Bouncers threw me out of a celebrity party.','bad')}},['star','gold']],
+ ['Party on a yacht','Sun, music and champagne',18,80,2000,1,()=>{st('happy',9);if(!partner()&&C(.15))meet('at a yacht party');else L('I partied on a yacht all weekend.','good')},['boat','teal']],
+ ['Go on a spring break trip','Beaches and bad decisions',18,25,1200,1,()=>{st('happy',10);if(C(.2)){st('health',-4);L('I got a terrible sunburn on spring break.','bad')}else L('Spring break was unforgettable.','good')},['plane','orange']],
+);
+function packsYear(){zooYear();museumYear();contrabandYear();vipYear();inv2Year();}
 
 function actMenu(){sheet('Activities',api=>{
   const a=S.age,adult=a>=18;
