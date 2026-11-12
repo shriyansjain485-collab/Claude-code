@@ -112,6 +112,53 @@ window.BAL = {
   // Yearly chance of the wealth hazards above. Rises with wealth and fame.
   hazards: { burglary: 0.04, lawsuitBase: 0.01, lawsuitPerBillion: 0.04, lawsuitPerFame: 0.0004, fraud: 0.015, minWealth: 250e3 },
 
+  /* ---------- careers (regular jobs, by field) ---------- */
+  // peak = ages when performance holds up best, retire = mandatory retirement age,
+  // risk = the hazards of that field, stress = extra stress per year.
+  career: {
+    rules: {
+      'Service & retail':   { peak: [22, 55], retire: 67, risk: ['layoff'], stress: 0 },
+      'Trades & industry':  { peak: [24, 48], retire: 62, risk: ['injury', 'layoff'], stress: 1 },
+      'Public service':     { peak: [25, 48], retire: 62, risk: ['injury', 'scandal'], stress: 2 },
+      'Office & business':  { peak: [30, 56], retire: 68, risk: ['layoff', 'burnout'], stress: 2 },
+      'Tech & science':     { peak: [26, 52], retire: 68, risk: ['burnout', 'layoff'], stress: 3 },
+      'Health & care':      { peak: [32, 60], retire: 70, risk: ['lawsuit', 'burnout'], stress: 4 },
+      'Education & social': { peak: [30, 60], retire: 68, risk: ['burnout'], stress: 2 },
+      'Creative & media':   { peak: [25, 52], retire: 70, risk: ['layoff', 'scandal'], stress: 1 },
+      'Law & government':   { peak: [38, 66], retire: 75, risk: ['scandal', 'lawsuit'], stress: 3 },
+      'Transport':          { peak: [25, 55], retire: 65, risk: ['injury'], stress: 1 },
+      'Fame':               { peak: [20, 42], retire: 62, risk: ['scandal'], stress: 2 },
+    },
+    risk: {
+      layoff:  { base: 0.02, recession: 4, crash: 7, severance: 0.25 },   // chance multiplies in bad times
+      injury:  { p: 0.04, careerEnding: 0.08 },
+      scandal: { p: 0.025, perFame: 0.0006 },
+      lawsuit: { p: 0.03, minSalary: 0.3, maxSalary: 1.5 },               // claim as a multiple of yearly salary
+      burnoutAt: 85,                                                      // stress level that triggers burnout
+    },
+    insurance: { cost: 0.02, covers: 0.8 },   // professional insurance: yearly cost as share of salary, share of lawsuits covered
+    restingStress: 25, stressRecovery: 0.2,   // each year stress moves this share of the way back to its resting level
+    promoteAbove: 66,                         // performance needed to be considered for promotion
+    rivalWins: 3,                             // how much a rival improves each time they beat you to a promotion
+  },
+
+  /* ---------- free time: every year you only have so many hours ---------- */
+  time: {
+    base: 12, job: -4, school: -3, perYoungKid: -1, maxKidPenalty: -2, assistant: 2,
+    // which actions cost free time, matched against the action's internal key: [pattern, cost]
+    costs: [['^work$', 2], ['^trip$', 2],
+      ['^(gym|lib|med|run|friend|crime|gang|exp|cast|duel|patrol|robbery|villain|study_m)$', 1],
+      ['^(hob|comp|x[A-Z]|m[A-Z]|pet\\d)', 1]],
+  },
+
+  /* ---------- stats ---------- */
+  stats: {
+    softCap: 85, hardCap: 95,     // gains are halved above softCap and quartered above hardCap
+    decay: 0.12,                  // each year smarts and looks lose this share of the gap above your natural level
+    eduBoost: { hs: 3, uni: 6, grad: 4 },  // education permanently raises your natural smarts
+    looksAging: 0.5,              // natural looks lost per year after 40
+  },
+
   /* ---------- high-stakes gambling ---------- */
   highStakes: { winChance: 0.47, shares: [0.1, 0.25, 0.5] },
 };
