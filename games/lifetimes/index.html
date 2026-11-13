@@ -2743,21 +2743,31 @@ function gangMenu(){sheet('Organized crime',api=>{
 });}
 
 /* ---------- god mode ---------- */
+// Reads an amount the way people type it: 2500000, 2,500,000, $2.5M, 750k, -10K, 1.2 billion, 3e6. Returns null if it is not a number.
+function parseAmount(t){
+  let x=String(t==null?'':t).trim().toLowerCase().replace(/[$,\s_]/g,'');if(!x)return 0;
+  const m=x.match(/^([+-]?(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?)(k|thousand|m|mn|mil|million|b|bn|billion|t|tn|trillion)?$/);if(!m)return null;
+  const mult={k:1e3,thousand:1e3,m:1e6,mn:1e6,mil:1e6,million:1e6,b:1e9,bn:1e9,billion:1e9,t:1e12,tn:1e12,trillion:1e12}[m[2]]||1;
+  const n=parseFloat(m[1])*mult;return Number.isFinite(n)&&Math.abs(n)<=1e15?n:null}
 function godMode(){sheet('God Mode',api=>{
   api.sub('Edit anything about this life. Changes apply instantly.');
   const f=document.createElement('form');
   const sl=(id,l,v,max=100)=>`<div class="field"><label for="${id}">${l}: <output id="${id}o">${v}</output></label><input type="range" id="${id}" min="0" max="${max}" value="${v}" oninput="document.getElementById('${id}o').textContent=this.value"></div>`;
   f.innerHTML=`<div class="row2"><div class="field"><label for="gfirst">First name</label><input id="gfirst" value="${esc(first())}" maxlength="20"></div><div class="field"><label for="glast">Last name</label><input id="glast" value="${esc(S.last)}" maxlength="24"></div></div>
   <div class="row2"><div class="field"><label for="gg">Gender</label><select id="gg"><option value="M"${he()?' selected':''}>Male</option><option value="F"${he()?'':' selected'}>Female</option></select></div>
-  <div class="field"><label for="gmoney">Bank balance ($)</label><input id="gmoney" type="number" step="1000" value="${Math.round(S.money)}"></div></div>
+  <div class="field"><label for="gmoney">Bank balance ($)</label><input id="gmoney" type="text" inputmode="decimal" autocomplete="off" value="${Math.round(S.money)}" placeholder="e.g. 2500000, 2.5M or -10K"></div></div>
   ${sl('ghappy','Happiness',S.stats.happy)}${sl('ghealth','Health',S.stats.health)}${sl('gsmarts','Smarts',S.stats.smarts)}${sl('glooks','Looks',S.stats.looks)}
   ${sl('gkarma','Karma',S.karma)}${sl('gfame','Fame',S.fame)}
-  <div class="field"><label for="gfol">Followers</label><input id="gfol" type="number" min="0" value="${S.followers}"></div>
+  <div class="field"><label for="gfol">Followers</label><input id="gfol" type="text" inputmode="decimal" autocomplete="off" value="${S.followers}" placeholder="e.g. 50000 or 1.2M"></div>
   <button class="btn primary" type="submit">Apply changes</button>`;
+  f.noValidate=true;
   f.onsubmit=e=>{e.preventDefault();const v=id=>f.querySelector('#'+id).value;
+    const money=parseAmount(v('gmoney')),fol=parseAmount(v('gfol'));
+    if(money==null){toast('Type the bank balance as a number, like 2500000, 2.5M or -10K.');f.querySelector('#gmoney').focus();return}
+    if(fol==null||fol<0){toast('Type followers as a number of 0 or more, like 50000 or 1.2M.');f.querySelector('#gfol').focus();return}
     S.name=(v('gfirst').trim()||first())+' '+(v('glast').trim()||S.last);S.last=v('glast').trim()||S.last;S.g=v('gg');
-    S.money=Number(v('gmoney'))||0;['happy','health','smarts','looks'].forEach(k=>S.stats[k]=clamp(+v('g'+k)));
-    S.karma=clamp(+v('gkarma'));S.fame=clamp(+v('gfame'));S.followers=Math.max(0,Math.round(+v('gfol')||0));
+    S.money=Math.round(money);['happy','health','smarts','looks'].forEach(k=>S.stats[k]=clamp(+v('g'+k)));
+    S.karma=clamp(+v('gkarma'));S.fame=clamp(+v('gfame'));S.followers=Math.round(fol);
     L('A higher power reshaped my life.');close()};
   api.el(f);
   api.sec('Quick powers');
