@@ -103,6 +103,8 @@ const ECO = (() => {
     const kidsCost = kidsN * (L0.perChild + table(L0.byNetWorth, nw) * L0.perChildLifestyle);
     const pets = S.pets.filter(p => p.alive).length * L0.perPet;
     const debt = S.money < 0 ? -S.money * L0.debtInterest : 0;
+    const tm = typeof LEG !== 'undefined' ? (LEG.has('thrifty') ? 0.88 : LEG.has('spendthrift') ? 1.15 : 1) : 1;
+    household *= tm;
     return { household: Math.round(household), kids: Math.round(kidsCost), pets, debt: Math.round(debt), total: Math.round(household + kidsCost + pets + debt), atHome };
   }
 
@@ -121,12 +123,13 @@ const ECO = (() => {
   function hazards() {
     const w = liquid(), H = BAL.hazards; if (w < H.minWealth || S.jail > 0) return;
     const guarded = S.vip && S.vip.staff && S.vip.staff.includes('Bodyguard');
-    if (chance(H.burglary)) {
+    const luck = typeof LEG !== 'undefined' && LEG.has('lucky') ? 0.6 : 1;
+    if (chance(H.burglary * luck)) {
       if (guarded) L('My bodyguard stopped a burglary at my home.', 'good');
       else { const v = amt('burglary', w + S.assets.reduce((a, x) => a + x.value, 0)); S.money -= v; L(`Burglars broke into my home and took ${fmt(v)} worth of valuables.`, 'bad'); }
     }
-    if (chance(H.fraud)) { const v = amt('fraud', w); S.money -= v; L(`An advisor I trusted quietly embezzled ${fmt(v)} from my accounts.`, 'bad'); }
-    const pSue = Math.min(0.25, H.lawsuitBase + Math.max(0, netWorth()) / 1e9 * H.lawsuitPerBillion + S.fame * H.lawsuitPerFame);
+    if (chance(H.fraud * luck)) { const v = amt('fraud', w); S.money -= v; L(`An advisor I trusted quietly embezzled ${fmt(v)} from my accounts.`, 'bad'); }
+    const pSue = luck * Math.min(0.25, H.lawsuitBase + Math.max(0, netWorth()) / 1e9 * H.lawsuitPerBillion + S.fame * H.lawsuitPerFame);
     if (chance(pSue)) {
       const v = amt('lawsuit', w);
       popup('Lawsuit', `Someone is suing you for ${fmt(v)}. ${P(['They say you caused a car accident.', 'A former employee claims unfair dismissal.', 'A neighbor says your renovation damaged their home.', 'A business partner claims you broke a contract.', 'A stranger claims you defamed them online.'])}`, [

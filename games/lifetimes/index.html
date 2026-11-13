@@ -231,6 +231,7 @@ nav button:disabled{opacity:.4;cursor:not-allowed}
 <script src="economy.js"></script>
 <script src="careers.js"></script>
 <script src="events.js"></script>
+<script src="legacy.js"></script>
 <script>
 "use strict";
 /* ---------- helpers ---------- */
@@ -443,7 +444,7 @@ const GANGS=['the Ashford Syndicate','the Black Tide crew','the Moretti outfit',
 let S=null, nextId=1;
 const uid=()=>nextId++;
 const fname=g=>P(g==='M'?MALE:FEMALE);
-function person(rel,age,g,last){return{id:uid(),rel,name:fname(g)+' '+(last||P(LAST)),g,age,alive:true,bond:R(55,95),money:R(0,80)*1000,job:null}}
+function person(rel,age,g,last){return LEG.npc({id:uid(),rel,name:fname(g)+' '+(last||P(LAST)),g,age,alive:true,bond:R(55,95),money:R(0,80)*1000,job:null})}
 
 function newLife(o={}){
   const g=o.g||(C(.5)?'M':'F'), last=o.last||P(LAST);
@@ -466,7 +467,7 @@ function newLife(o={}){
   if(royal)L(`I was born into the royal house of ${S.country} as ${S.royal.title} ${S.name.split(' ')[0]}.`,'good');
   const m=S.people.find(p=>p.rel.startsWith('Mother')),f=S.people.find(p=>p.rel.startsWith('Father'));
   if(m&&f&&!o.people)L(`My mother is ${m.name} (${m.age}) and my father is ${f.name} (${f.age}).`);
-  migrate();snap();save();render();
+  LEG.initLife(o);migrate();snap();save();render();
 }
 function spend(c,what){if(S.money>=c){S.money-=c;return true}toast(`Not enough money${what?' for '+what:''}. You need ${fmt(c)} and have ${fmt(S.money)}.`);return false}
 function limit(k,n,msg){S.acts[k]=S.acts[k]||0;if(S.acts[k]>=n){toast(msg||'You have done that enough for this year.');return false}if(!RULES.spendTime(k)){toast('You have no free time left this year. Age up to get more.');return false}S.acts[k]++;return true}
@@ -476,8 +477,8 @@ function divorceCost(){return Math.round(BAL.events.divorceShare*(S.flags.prenup
 function breakUp(p,msg){if(p.rel==='Spouse'){const half=divorceCost();S.money-=half;msg+=half?` The divorce cost me ${fmt(half)}.`:''}p.rel='Ex';p.bond=clamp(p.bond-20);L(msg,'bad');st('happy',-12)}
 function bankrupt(){const seized=S.assets.reduce((a,x)=>a+x.value,0);S.assets=[];S.invest=0;S.port={};S.money=0;S.flags.bankrupt=S.age;st('happy',-15);L(`I declared bankruptcy. My debts were wiped out${seized?` and ${fmt(seized)} of my possessions were sold off`:''}.`,'bad')}
 function migrate(){S.acts=S.acts||{};S.flags=S.flags||{};S.seen=S.seen||{};S.look=S.look||{skin:R(0,5),hair:R(0,5),shirt:R(0,5)};
-  if(S.rep==null)S.rep=50;RULES.ensureBase();if(S.job)CAR.ensure(S.job);S.pets=S.pets||[];S.biz=S.biz||[];ECO.migrate();S.assets=S.assets||[];S.ill=S.ill||[];S.snaps=S.snaps||[];S.year0=S.year0||2026;S.edu.grad=S.edu.grad||[];ensureMarket()}
-function L(t,cls){const y=S.log[S.log.length-1];y.lines.push({t,c:cls||''})}
+  LEG.migrate();if(S.rep==null)S.rep=50;RULES.ensureBase();if(S.job)CAR.ensure(S.job);S.pets=S.pets||[];S.biz=S.biz||[];ECO.migrate();S.assets=S.assets||[];S.ill=S.ill||[];S.snaps=S.snaps||[];S.year0=S.year0||2026;S.edu.grad=S.edu.grad||[];ensureMarket()}
+function L(t,cls){const y=S.log[S.log.length-1];y.lines.push({t,c:cls||''});LEG.observe(t,cls)}
 const st=(k,d)=>{S.stats[k]=clamp(S.stats[k]+RULES.gainScale(S.stats[k],d))};
 const first=()=>S.name.split(' ')[0];
 const he=()=>S.g==='M';
@@ -627,6 +628,7 @@ function render(){
   if(S.royal&&!S.royal.overthrown)tags.push(`<span class="tag royal">Approval ${S.royal.pop}%</span>`);
   if(S.gang)tags.push(`<span class="tag bad">${GANG_RANKS[S.gang.rank]}</span>`);
   if(S.fame>=15)tags.push(`<span class="tag fame">Fame ${S.fame}%</span>`);
+  if(S.challenge&&S.challenge.status==='active')tags.push(`<span class="tag royal">Challenge: ${esc((LEG.CHALLENGES.find(c=>c.id===S.challenge.id)||{}).name||'')}</span>`);
   if(S.vampire)tags.push('<span class="tag bad">Vampire</span>');if(S.magic)tags.push('<span class="tag royal">Mage</span>');if(S.hero&&!S.hero.secret)tags.push(`<span class="tag royal">${esc(S.hero.alias)}</span>`);
   if(S.ill.length)tags.push(`<span class="tag bad">${esc(S.ill.map(i=>i.n).join(', '))}</span>`);
   $('#tags').innerHTML=tags.join('');
@@ -649,7 +651,7 @@ function render(){
   const nk=kids().length;
   const rows=[['Net worth',fmt(netWorth())],['Occupation',stage()],['Education',S.edu.degrees.slice(-1)[0]||'None yet'],['Relationship',relStatus()],
     ['Children',nk||'None'],['Pets',S.pets.filter(p=>p.alive).map(p=>p.name).join(', ')||'None'],['Possessions',S.assets.length||'None'],['Businesses',S.biz.length||'None'],
-    ['Followers',S.followers.toLocaleString()],['Karma',S.karma+'%'],['Reputation',(S.rep==null?50:S.rep)+'%'],['Convictions',S.record],['Economy',{expansion:'Growing',boom:'Booming',recession:'Recession',crash:'Crash'}[ECO.phase()]],['Free time left',`${RULES.timeLeft()} of ${RULES.timeBudget()}`],['Generation',S.gen]];
+    ['Followers',S.followers.toLocaleString()],['Karma',S.karma+'%'],['Reputation',(S.rep==null?50:S.rep)+'%'],['Convictions',S.record],['Economy',{expansion:'Growing',boom:'Booming',recession:'Recession',crash:'Crash'}[ECO.phase()]],['Free time left',`${RULES.timeLeft()} of ${RULES.timeBudget()}`],['Traits',(S.traits||[]).map(t=>LEG.TRAITS[t].name).join(', ')||'—'],['Generation',S.gen]].concat(S.challenge?[['Challenge',`${(LEG.CHALLENGES.find(c=>c.id===S.challenge.id)||{name:'?'}).name}: ${S.challenge.status}`]]:[]).concat(S.flags.assisted?[['Achievements','Off for this life']]:[]);
   $('#side').innerHTML=`<h2>Life at a glance</h2><div class="glance">${rows.map(([k,v])=>`<div><span>${k}</span><span title="${esc(v)}">${esc(v)}</span></div>`).join('')}</div>`;
   $('#tAge').disabled=!S.alive;
   $('#tAge').querySelector('b').textContent=S.alive?'+1':'RIP';
@@ -754,7 +756,7 @@ function ageUp(){
   finances();
   // stats drift back toward a healthy baseline for your age
   const a=S.age,ea=S.vampire?Math.min(a,30):Math.max(0,a-(S.youth||0));
-  const base=ea<45?86:Math.max(30,86-(ea-45)*0.9);
+  const base=(ea<45?86:Math.max(30,86-(ea-45)*0.9))+(LEG.has('athletic')?5:0);
   S.stats.health=clamp(S.stats.health+(base-S.stats.health)*0.16+R(-2,2));
   S.ill.forEach(i=>{st('health',-Math.round(i.h/(i.chronic?5:3)));if(i.hap)st('happy',-Math.round(i.hap/3))});
   S.ill=S.ill.filter(i=>{if(C(i.heal||0)){L(i.n.startsWith('a ')?`My ${i.n.slice(2)} healed.`:`My ${i.n} cleared up.`,'good');return false}return true});
@@ -765,6 +767,7 @@ function ageUp(){
   RULES.statYear();
   if(!S.vampire){if(ea>40&&C(.5))st('looks',-1);if(ea>65&&C(.5))st('looks',-1)}else{st('happy',-1);if(C(.03)){st('health',-20);L('Vampire hunters tracked me down. I barely escaped.','bad')}}
   relativesYear();
+  LEG.year();
   if(pt&&pt.bond<12&&C(.35))breakUp(pt,`${fn1(pt)} said they were not happy anymore and left me.`);
   S.pets.forEach(p=>{p.age++;if(p.alive&&p.kind==='mysterious egg'&&p.age>=2){p.kind='dragon';p.age=0;p.name=P(['Ember','Cinder','Saffron','Thistle','Obsidian','Pip','Marigold','Soot']);p.bond=80;st('happy',15);L(`My mysterious egg hatched into a baby dragon! I named it ${p.name}.`,'good')}
     if(p.alive&&p.age>(p.kind==='dragon'?400:p.kind==='mysterious egg'?99:p.kind==='tortoise'?60:p.kind==='parrot'?40:R(11,17))){p.alive=false;L(`My ${p.kind} ${p.name} died of old age.`,'bad');st('happy',-8)}});
@@ -838,7 +841,7 @@ function relativesYear(){
   if(FG.ages.includes(S.age))parents().forEach(p=>{if(p.money>=FG.minParentWealth){const g=Math.round(Math.min(FG.cap,p.money*FG.share));p.money-=g;const net=ECO.inheritNet(g);S.money+=net;L(`My ${p.rel.replace(' (Monarch)','').toLowerCase()} gave me ${fmt(net)} to help me get started${net<g?` (after ${fmt(g-net)} in gift tax)`:''}.`,'good')}});
   S.people.forEach(p=>{
     if(!p.alive)return;
-    const risk=p.age<60?0.002:p.age<75?0.02:p.age<85?0.07:0.18;
+    const risk=(p.age<60?0.002:p.age<75?0.02:p.age<85?0.07:0.18)*(p.st&&p.st.health<40?1.8:p.st&&p.st.health>80?0.7:1);
     if(C(risk)){p.alive=false;st('happy',-R(8,20));
       L(`My ${p.rel.replace(' (Monarch)','').toLowerCase()} ${p.name} died at age ${p.age}.`,'bad');
       if(['Mother','Father','Spouse'].some(r=>p.rel.startsWith(r))&&p.money>0&&C(.7)){const gross=Math.round(p.money*(p.rel==='Spouse'?1:0.5)),inh=p.rel==='Spouse'?gross:ECO.inheritNet(gross);S.money+=inh;L(`I inherited ${fmt(inh)}${inh<gross?` after ${fmt(gross-inh)} in inheritance tax`:''}.`,'good')}
@@ -852,7 +855,7 @@ function relativesYear(){
 function deathCheck(){
   const a=S.vampire?Math.min(S.age,30):Math.max(0,S.age-(S.youth||0)),h=S.stats.health;
   let p=a<1?.0015:a<18?.0003:a<30?.0007:a<45?.0013:a<55?.003:a<65?.006:a<75?.014:a<85?.042:a<95?.11:.28;
-  p*=h>=70?0.75:h>=45?1:h>=25?1.5:2.6;if(h<=5)p+=.2;
+  p*=h>=70?0.75:h>=45?1:h>=25?1.5:2.6;if(h<=5)p+=.2;p*=LEG.has('resilient')?0.8:LEG.has('fragile')?1.25:1;
   S.ill.forEach(i=>{if(i.h>=15)p+=i.h/1800});
   if(C(p)){
     const serious=S.ill.filter(i=>i.h>=12);const cause=serious.length&&C(.6)?P(serious).n:a>78?'old age':P(['a car crash','a heart attack','a stroke','a bad fall','a sudden illness']);
@@ -860,47 +863,25 @@ function deathCheck(){
   }
 }
 function die(text){
-  S.alive=false;L(text,'bad');S.cause=text;render();save();
+  S.alive=false;L(text,'bad');S.cause=text;LEG.onDeath();render();save();
   queue=[];resume=null;afterQ=[];setTimeout(deathScreen,60);
 }
-function ribbon(){
-  const nw=netWorth();const sp=S.sp||{};
-  if(sp.kind==='race'&&sp.titles>=2)return['Speed Demon','Champion behind the wheel.'];
-  if(sp.kind==='fight'&&sp.belt)return['Undisputed','Held the belt.'];
-  if(sp.kind==='agent'&&sp.rank>=3)return['Spymaster','Nobody ever knew.'];
-  if(sp.kind==='director'&&sp.awards)return['Auteur','Made films that mattered.'];
-  if(sp.kind==='cult'&&sp.followers>=1000)return['Prophet','Thousands followed.'];
-  if(S.zoo&&zooCount(S.zoo)>=30)return['Zookeeper','Built a wild kingdom.'];
-  if(S.vampire&&S.age>=120)return['Immortal','Outlived centuries.'];
-  if(S.hero&&(S.hero.wins||0)>=3)return['Superhero','Saved the city, again and again.'];
-  if(S.magic&&S.magic.xp>=90)return['Archmage','Mastered the arcane arts.'];
-  if((S.flags.visited||[]).length>=15)return['Globetrotter','Saw the whole world.'];
-  if(sp.kind==='pol'&&sp.best>=5)return['Head of State','Led the nation.'];
-  if(sp.kind==='sport'&&(sp.titles||0)>=3)return['Champion','A winner, again and again.'];
-  if(sp.kind==='actor'&&(sp.awards||0)>=1)return['Award Winner','Took home the golden statue.'];
-  if(sp.kind==='music'&&(sp.hits||0)>=5)return['Hitmaker','Wrote the songs everyone sang.'];
-  if(S.royal&&S.royal.monarch)return['Sovereign','Ruled a kingdom.'];
-  if(S.gang&&S.gang.rank>=3)return['Kingpin','Ran a criminal empire.'];
-  if(S.fame>=80)return['Legend','Everyone knew the name.'];
-  if(nw>=1e7)return['Tycoon','Built a fortune.'];
-  if(S.record>=5)return['Outlaw','Lived outside the law.'];
-  if(S.edu.level>=3)return['Scholar','Collected degrees.'];
-  if(S.people.filter(p=>['Son','Daughter'].includes(p.rel)).length>=4)return['Matriarch / Patriarch','Raised a big family.'];
-  if(S.karma>=85)return['Saint','Kind to the end.'];
-  if(S.age>=95)return['Long-lived','Outlived almost everyone.'];
-  if(S.stats.happy>=80)return['Content','A happy life.'];
-  if(S.age<20)return['Brief','Gone too soon.'];
-  return['Ordinary','A quiet, regular life.'];
-}
+function ribbon(){return LEG.ribbons()[0]}
 function deathScreen(){
-  const [rb,rbd]=ribbon();const ks=kids();
+  if(!S.final)LEG.onDeath();
+  const F=S.final,rbs=F.ribbons,ks=kids(),ch=S.challenge&&LEG.CHALLENGES.find(c=>c.id===S.challenge.id);
   stack=[{title:'Rest in peace',lock:true,event:true,build:api=>{
-    api.html(`<div class="tomb"><div class="face dead">${face()}</div><h3>${esc(S.name)}</h3><p class="years">${S.year0} – ${S.year0+S.age}</p><p class="sub">${esc(S.cause||'')}</p><span class="ribbon">${rb}</span><p class="sub">${rbd}</p></div>
-    <div class="kv"><span>Net worth</span><span>${fmt(netWorth())}</span><span>Last job</span><span>${esc(S.job?S.job.title:S.sp?spTitle():stage())}</span><span>Education</span><span>${esc(S.edu.degrees.slice(-1)[0]||'None')}</span><span>Children</span><span>${ks.length}</span><span>Karma</span><span>${S.karma}%</span><span>Generation</span><span>${S.gen}</span></div>`);
-    if(ks.length){api.sec('Continue as one of your children');ks.forEach(k=>api.item(esc(k.name),`${k.rel}, age ${k.age}`,null,()=>continueAs(k),false,['baby','orange']))}
+    api.html(`<div class="tomb"><div class="face dead">${face()}</div><h3>${esc(S.name)}</h3><p class="years">${S.year0} – ${S.year0+S.age} · age ${S.age}</p><p class="sub">${esc(S.cause||'')}</p><span class="ribbon">${esc(rbs[0][0])}</span><p class="sub">${esc(rbs[0][1])}</p>
+      ${rbs.length>1?`<div class="tags" style="justify-content:center;margin-top:6px">${rbs.slice(1,8).map(r=>`<span class="tag royal" title="${esc(r[1])}">${esc(r[0])}</span>`).join('')}</div>`:''}</div>
+    <div class="kv"><span>Final net worth</span><span>${fmt(F.nw)}</span><span>Peak net worth</span><span>${fmt(F.peak)}${F.peakAge!=null?` (age ${F.peakAge})`:''}</span><span>Last job</span><span>${esc(S.job?S.job.title:S.sp?spTitle():stage())}</span><span>Education</span><span>${esc(S.edu.degrees.slice(-1)[0]||'None')}</span><span>Children</span><span>${ks.length}</span><span>Karma</span><span>${S.karma}%</span><span>Traits</span><span>${esc((S.traits||[]).map(t=>LEG.TRAITS[t].name).join(', ')||'—')}</span><span>Generation</span><span>${S.gen}</span>${ch?`<span>Challenge</span><span>${esc(ch.name)}: ${S.challenge.status==='won'?'complete':'failed'}</span>`:''}</div>
+    ${(S.newAch||[]).length?`<div class="sec">Achievements earned this life</div><div class="tags">${S.newAch.map(n=>`<span class="tag fame">${esc(n)}</span>`).join('')}</div>`:''}
+    ${S.flags.assisted?'<p class="sub">This life used God Mode, max stats or sandbox mode, so it could not earn achievements.</p>':''}
+    <div class="sec">Life story</div><div class="auclog">${LEG.timeline(12).map(h=>`<p style="font-weight:600;color:var(--ink)"><b>Age ${h.a}:</b> ${esc(h.t)}</p>`).join('')||'<p>A quiet life.</p>'}</div>`);
+    if(ks.length){api.sec('Continue as one of your children');ks.forEach(k=>api.item(esc(k.name),`${k.rel}, age ${k.age}${k.traits?` · ${k.traits.map(t=>LEG.TRAITS[t].name).join(', ')}`:''}`,null,()=>continueAs(k),false,['baby','orange']))}
     api.sec('Or');
-    api.item('Rewind with the Time Machine','Go back to an earlier year of this life',null,()=>timeMachine(true));
+    api.item('Rewind with the Time Machine',LEG.rewindsLeft()===Infinity?'Sandbox mode: unlimited':`${LEG.rewindsLeft()} rewind${LEG.rewindsLeft()===1?'':'s'} left this life`,null,()=>timeMachine(true),LEG.rewindsLeft()<=0);
     api.item('Start a brand new life','',null,()=>newLifeMenu(true));
+    api.item('Achievements & settings',`${LEG.achCount()} of ${LEG.achTotal()} unlocked`,null,metaMenu,false,['star','gold']);
   }}];draw();
 }
 function handOver(k){
@@ -913,7 +894,7 @@ function handOver(k){
   Object.assign(S,{assets:old.assets,biz:old.biz,invest:old.invest,port:old.port||{},market:old.market,inv2:old.inv2||null,zoo:old.zoo||null,museum:old.museum||null,pets:old.pets.filter(x=>x.alive)});
   if(old.royal){S.royal={title:k.g==='M'?'Prince':'Princess',monarch:!!old.royal.monarch,pop:old.royal.pop};S.country=old.country}
   if(k.age>=18){S.edu.level=1;S.edu.hsDone=1;S.edu.degrees=['High school diploma']}
-  S.stats.smarts=clamp((old.stats.smarts+R(10,90))/2);S.stats.looks=clamp((old.stats.looks+R(10,90))/2);
+  LEG.inheritInto(old,k);
   L(`My ${par}, ${old.name}, stepped away from it all to live quietly by the sea and handed everything to me.`,'good');
   {const tot=Math.max(0,netWorth()),gtax=tot-ECO.inheritNet(tot);if(gtax>0){S.money-=gtax;L(`Gift tax on the transfer came to ${fmt(gtax)}.`,'bad')}}
   L(`I now have ${fmt(cash)} in cash${S.assets.length?`, ${S.assets.length} possession${S.assets.length>1?'s':''}`:''}${S.biz.length?`, ${S.biz.length} business${S.biz.length>1?'es':''}`:''}. My net worth is ${fmt(netWorth())}.`,'good');
@@ -932,7 +913,7 @@ function continueAs(k){
   L(`I am ${S.name}, child of the late ${old.name}. I inherited ${fmt(inherit)}${inherit<share?` after ${fmt(share-inherit)} in inheritance tax`:''}.`,'good');
   if(old.royal){S.royal={title:k.g==='M'?'Prince':'Princess',monarch:!!old.royal.monarch,pop:old.royal.pop};S.country=old.country;if(S.royal.monarch)L(`I inherited the crown of ${S.country}.`,'good')}
   if(k.age>=18){S.edu.level=1;S.edu.hsDone=1;S.edu.degrees=['High school diploma']}
-  S.stats.smarts=clamp((old.stats.smarts+R(10,90))/2);S.stats.looks=clamp((old.stats.looks+R(10,90))/2);
+  LEG.inheritInto(old,k);
   S.snaps=[];snap();save();close();
 }
 
@@ -1915,11 +1896,18 @@ function datingMenu(){
   });
 }
 function haveBaby(auto){
-  const g=C(.5)?'M':'F';const k=person(g==='M'?'Son':'Daughter',0,g,S.last);const taken=new Set([first(),...S.people.map(x=>x.name.split(' ')[0])]);for(let i=0;i<20&&taken.has(k.name.split(' ')[0]);i++)k.name=fname(g)+' '+S.last;k.bond=95;k.money=0;S.people.push(k);
+  const g=C(.5)?'M':'F';const k=person(g==='M'?'Son':'Daughter',0,g,S.last);const taken=new Set([first(),...S.people.map(x=>x.name.split(' ')[0])]);for(let i=0;i<20&&taken.has(k.name.split(' ')[0]);i++)k.name=fname(g)+' '+S.last;k.bond=95;k.money=0;LEG.initChild(k);S.people.push(k);
   L(`${auto?'Surprise! ':''}I welcomed a baby ${g==='M'?'boy':'girl'}, ${k.name}.`,'good');st('happy',15);
 }
 function personMenu(id){const p=S.people.find(x=>x.id===id);sheet(p.name,api=>{
-  api.html(`<p class="sub">${esc(p.rel)} · age ${p.age}${p.job?` · ${esc(p.job)}`:''}<br>Relationship</p><div class="mini" style="max-width:none;height:9px"><i style="width:${p.bond}%;background:var(--jade)"></i></div>`);
+  LEG.npc(p);const enemy=LEG.isEnemy(p);
+  api.html(`<p class="sub">${esc(p.rel)} · age ${p.age}${p.job?` · ${esc(p.job)}`:''} · ${esc(p.trait)}${p.traits?` · ${p.traits.map(t=>LEG.TRAITS[t].name).join(', ')}`:''}<br>${enemy?'Hostility':'Relationship'}</p><div class="mini" style="max-width:none;height:9px"><i style="width:${enemy?100-p.bond:p.bond}%;background:${enemy?'var(--bad)':'var(--jade)'}"></i></div>
+    <div class="kv" style="margin-top:10px"><span>Happiness</span><span>${p.st.happy}%</span><span>Health</span><span>${p.st.health}%</span><span>Smarts</span><span>${p.st.smarts}%</span><span>Looks</span><span>${p.st.looks}%</span>${p.income?`<span>Income</span><span>${fmt(p.income)}/yr</span>`:''}<span>Money</span><span>${fmt(p.money)}</span></div>`);
+  if(enemy){api.sec('Deal with your enemy');
+    api.item('Try to make peace','Swallow your pride',null,act('',()=>{if(!limit('peace'+p.id,1,'Give it a year before you try again.'))return;if(C(p.bond/100+0.25)){p.rel='Friend';p.bond=40;kar(4);L(`${p.name} and I made peace.`,'good')}else{p.bond=clamp(p.bond-8);L(`${p.name} rejected my attempt to make peace.`,'bad')}}),false,['heart','pink']);
+    api.item('Get revenge','Hit back. Karma will notice.',null,act('',()=>{if(!limit('rev'+p.id,1,'Once a year is enough.'))return;kar(-8);p.bond=clamp(p.bond-15);if(C(.2)){S.record++;const f=Math.max(500,ECO.amt('fine'));S.money-=f;L(`My revenge on ${p.name} got me a criminal charge and a ${fmt(f)} fine.`,'bad')}else{p.money=Math.round(p.money*0.85);L(`I got my revenge on ${p.name}.`)}}),false,['mask','red']);
+    api.item('Get a restraining order',`Halves what they can do to you · ${fmt(Math.max(2000,ECO.amt('fine')))}`,null,act('',()=>{if(!spend(Math.max(2000,ECO.amt('fine'))))return;p.restrain=1;L(`I got a restraining order against ${p.name}.`)}),!!p.restrain,['lock','teal']);
+    return}
   const once=(k,fn)=>()=>{const key=k+p.id;if(S.acts[key]){toast(`You already did that with ${fn1(p)} this year.`);return}S.acts[key]=1;act('',fn)()};
   api.item('Spend time together','',null,once('time',()=>{p.bond=clamp(p.bond+R(5,12));st('happy',3);L(`I spent time with my ${p.rel.toLowerCase()} ${p.name}.`)}));
   api.item('Have a conversation','',null,once('talk',()=>{p.bond=clamp(p.bond+R(1,7));L(`I had a long talk with ${p.name}.`)}));
@@ -1935,7 +1923,7 @@ function personMenu(id){const p=S.people.find(x=>x.id===id);sheet(p.name,api=>{
     ['Elope at city hall',()=>{p.rel='Spouse';L(`${p.name} and I eloped.`,'good');st('happy',12)}]]))}
   if(['Partner','Spouse','Fiancé','Fiancée'].includes(p.rel)){
     if(S.age<55)api.item('Try for a baby','',null,once('baby',()=>{if(C(S.age<35?0.6:S.age<45?0.35:0.1))haveBaby();else L('We tried for a baby but no luck this year.')}));
-    api.item('Adopt a child',fmt(30e3),null,act('',()=>{if(!spend(30e3))return;const g=C(.5)?'M':'F';const k=person(g==='M'?'Son':'Daughter',R(0,8),g,S.last);k.bond=80;S.people.push(k);L(`We adopted ${k.name}, age ${k.age}.`,'good');st('happy',12)}));
+    api.item('Adopt a child',fmt(30e3),null,act('',()=>{if(!spend(30e3))return;const g=C(.5)?'M':'F';const k=person(g==='M'?'Son':'Daughter',R(0,8),g,S.last);k.bond=80;LEG.initChild(k);S.people.push(k);L(`We adopted ${k.name}, age ${k.age}.`,'good');st('happy',12)}));
     api.item(p.rel==='Spouse'?'Divorce':'Break up','',null,act('',()=>{if(p.rel==='Spouse'){const half=divorceCost();S.money-=half;L(`I divorced ${p.name}. The settlement cost me ${fmt(half)}.`,'bad')}else L(`I broke up with ${p.name}.`,'bad');p.rel='Ex';st('happy',-10)}));
   }
   if(p.rel==='Ex')api.item('Try to get back together','',null,once('back',()=>{if(C(p.bond/200)&&!partner()){p.rel='Partner';L(`${p.name} and I got back together.`,'good')}else L(`${p.name} is not interested in getting back together.`)}));
@@ -1984,7 +1972,7 @@ function hobbyItem(api,h){const lv=(S.hob||{})[h.n]||0;
   api.item(h.n+(lv>=100?' <span class="pill">Mastered</span>':''),`${h.d}${lv?` · skill ${lv}%`:''}`,h.c?fmt(h.c):'Free',act('',()=>{
     if(lv>=100){toast(`You have mastered ${lc(h.n)}. There is nothing left to learn.`);return}
     if(!limit('hob'+h.n,2,`You have practiced ${lc(h.n)} enough this year.`))return;if(h.c&&!spend(h.c))return;
-    S.hob=S.hob||{};const before=lv,now=clamp(lv+R(5,11)-(lv>70?3:0));S.hob[h.n]=now;st(h.st,R(1,3));st('happy',1);
+    S.hob=S.hob||{};const before=lv,now=clamp(lv+R(5,11)-(lv>70?3:0)+(LEG.has('creative')?3:0));S.hob[h.n]=now;st(h.st,R(1,3));st('happy',1);
     if(h.risk&&C(h.risk)){st('health',-8);L(`I hurt myself ${lc(h.n)}.`,'bad');return}
     if(before<50&&now>=50){S.money+=h.cash[0];L(h.n==='Learning a new language'?`I can now hold a conversation in ${S.flags.lang=S.flags.lang||P(LANGS)}.`:h.m[0],'good');st('happy',5)}
     else if(before<100&&now>=100){S.money+=h.cash[1];S.fame=clamp(S.fame+3);L(h.n==='Learning a new language'?`I am now fluent in ${S.flags.lang||P(LANGS)}!`:h.m[1],'good');st('happy',10)}
@@ -2582,9 +2570,10 @@ function godMode(){sheet('God Mode',api=>{
 function timeMachine(fromDeath){sheet('Time Machine',api=>{
   const snaps=S.snaps.filter(s=>s.age<=S.age);
   if(!snaps.length){api.sub('Nothing to rewind to yet. Live a year first.');return}
-  api.sub('Go back to the start of an earlier year. Everything after it is undone.');
+  const left=LEG.rewindsLeft();api.sub(`Go back to the start of an earlier year. Everything after it is undone. ${left===Infinity?'Sandbox mode: unlimited rewinds.':`Rewinds left this life: <b>${left}</b> of ${LEG.rewindsPerLife()} (earn achievements for more).`}`);
   snaps.slice().reverse().forEach(s=>api.item(`Age ${s.age}`,s.age===S.age?'Start of this year':`${S.age-s.age} year${S.age-s.age>1?'s':''} ago`,null,()=>{
-    const keep=S.snaps.filter(x=>x.age<=s.age);const log=JSON.parse(JSON.stringify(S.log.slice(0,s.logLen||S.log.length)));if(s.lastLen!=null&&log.length)log[log.length-1].lines=log[log.length-1].lines.slice(0,s.lastLen);S=JSON.parse(JSON.stringify(s.data));S.log=log.length?log:[{age:S.age,lines:[]}];S.snaps=keep;nextId=Math.max(nextId,s.id);S.alive=true;
+    if(LEG.rewindsLeft()<=0){toast('No rewinds left in this life. Earn achievements to get more.');return}const used=(S.flags.rewinds||0)+(LEG.sandbox()?0:1),ach=S.newAch,ass=S.flags.assisted,god=S.flags.godUsed;
+    const keep=S.snaps.filter(x=>x.age<=s.age);const log=JSON.parse(JSON.stringify(S.log.slice(0,s.logLen||S.log.length)));if(s.lastLen!=null&&log.length)log[log.length-1].lines=log[log.length-1].lines.slice(0,s.lastLen);S=JSON.parse(JSON.stringify(s.data));S.log=log.length?log:[{age:S.age,lines:[]}];S.snaps=keep;nextId=Math.max(nextId,s.id);S.alive=true;S.final=null;S.flags.rewinds=used;S.newAch=ach;if(ass)S.flags.assisted=1;if(god)S.flags.godUsed=1;
     L('I woke up with a strange sense of déjà vu.');queue=[];close();}));
 },{root:!!fromDeath});}
 
@@ -2597,16 +2586,31 @@ function newLifeMenu(force){
     <div class="row2"><div class="field"><label for="lg">Gender</label><select id="lg"><option value="">Random</option><option value="M">Male</option><option value="F">Female</option></select></div>
     <div class="field"><label for="lc">Country</label><select id="lc"><option value="">Random</option>${COUNTRIES.map(c=>`<option>${c}</option>`).join('')}</select></div></div>
     <div class="field"><label for="lroyal">Start as</label><select id="lroyal"><option value="">Ordinary family</option><option value="royal">Royal heir</option><option value="rich">Wealthy family</option></select></div>
-    <div class="field"><label for="lstats">Starting stats</label><select id="lstats"><option value="">Random</option><option value="max">All at 100%</option></select></div>
+    <div class="field"><label for="lstats">Starting stats</label><select id="lstats"><option value="">Random</option><option value="max">All at 100% (no achievements)</option></select></div>
     <button class="btn primary" type="submit">Start life</button>`;
     f.onsubmit=e=>{e.preventDefault();const v=id=>f.querySelector('#'+id).value.trim();
       const o={first:v('lfirst')||undefined,last:v('llast')||undefined,g:v('lg')||undefined,country:v('lc')||undefined,royal:v('lroyal')==='royal'};
-      if(v('lstats')==='max')o.stats={happy:100,health:100,smarts:100,looks:100};
+      if(v('lstats')==='max'){o.stats={happy:100,health:100,smarts:100,looks:100};o.assisted=1}
       queue=[];newLife(o);if(v('lroyal')==='rich'){S.people.forEach(p=>{if(['Mother','Father'].includes(p.rel))p.money=R(5,40)*1e6});L('My family is extremely wealthy.','good')}
       close()};
     api.el(f);
+    api.sec('More ways to play');
+    api.item('Challenge mode','Preset starts with a goal to beat',`${Object.keys(LEG.store().challenges).length}/${LEG.CHALLENGES.length} done`,challengeMenu,false,['crown','gold']);
+    api.item('Achievements & settings',`${LEG.achCount()} of ${LEG.achTotal()} unlocked`,null,metaMenu,false,['star','gold']);
   }}];draw();
 }
+function challengeMenu(){sheet('Challenge mode',api=>{
+  api.sub('Each challenge starts a new life with special conditions and a goal. Complete it to earn an achievement.');
+  LEG.CHALLENGES.forEach(c=>{const done=LEG.store().challenges[c.id];api.item(esc(c.name)+(done?' <span class="pill">Done</span>':''),c.d,null,()=>popup(c.name,`${c.d}${c.deadline?` You have until age ${c.deadline}.`:''}`,[['Start this challenge',()=>then(()=>{queue=[];newLife({});LEG.startChallenge(c.id);save();render();close()})],['Not now',null]]),false,['crown','gold'])});
+});}
+function metaMenu(){sheet('Achievements & settings',api=>{const m=LEG.store(),n=LEG.achCount();
+  api.html(`<div class="kv"><span>Achievements</span><span>${n} of ${LEG.achTotal()}</span><span>Lives played</span><span>${m.lives||0}</span><span>Richest life</span><span>${fmt(m.best.nw||0)}</span><span>Longest life</span><span>${m.best.age||0} years</span><span>God Mode</span><span>${LEG.sandbox()?'Unlimited (sandbox)':LEG.godUnlocked()?'Unlocked: once per life':`Locked (${n}/${LEG.GOD_UNLOCK} achievements)`}</span><span>Time Machine</span><span>${LEG.sandbox()?'Unlimited (sandbox)':`${LEG.rewindsPerLife()} rewind${LEG.rewindsPerLife()>1?'s':''} per life`}</span></div>`);
+  api.sec('Settings');
+  api.item(`Sandbox mode: ${LEG.sandbox()?'On':'Off'}`,'Unlimited God Mode and Time Machine. Lives played in sandbox mode cannot earn achievements.',null,act('',()=>{LEG.setSandbox(!LEG.sandbox());if(LEG.sandbox()&&S)S.flags.assisted=1;toast(LEG.sandbox()?'Sandbox mode is on.':'Sandbox mode is off. New lives can earn achievements again.')}),false,['star','gold']);
+  api.sec('Achievements');
+  LEG.ACH.forEach(([id,name,d])=>{const a=m.ach[id];api.item(esc(name)+(a?' <span class="pill">Unlocked</span>':''),a?`${d} Earned by ${esc(a.life)} at age ${a.age}.`:d,null,()=>{},!a,a?['star','gold']:['lock','blue'])});
+  LEG.CHALLENGES.forEach(c=>{const a=m.ach['ch_'+c.id];api.item('Challenge: '+esc(c.name)+(a?' <span class="pill">Unlocked</span>':''),c.d,null,()=>{},!a,a?['crown','gold']:['lock','blue'])});
+});}
 
 /* ---------- wire up ---------- */
 $('#tAge').onclick=ageUp;
@@ -2614,7 +2618,10 @@ $('#tJob').onclick=()=>{stack=[];careerMenu()};
 $('#tAssets').onclick=()=>{stack=[];assetsMenu()};
 $('#tPeople').onclick=()=>{stack=[];peopleMenu()};
 $('#tDo').onclick=()=>{stack=[];actMenu()};
-$('#bGod').onclick=()=>{stack=[];if(S.alive)godMode();else note('God Mode','This life has ended. Use the Time Machine to bring it back first.')};
+$('#bGod').onclick=()=>{stack=[];if(!S.alive){note('God Mode','This life has ended. Use the Time Machine to bring it back first.');return}
+  if(!LEG.godUnlocked()){note('God Mode is locked',`Unlock God Mode by earning ${LEG.GOD_UNLOCK} achievements (you have ${LEG.achCount()}), or turn on sandbox mode in Achievements & settings.`);return}
+  if(LEG.sandbox()||S.flags.godUsed){if(!LEG.sandbox()&&S.flags.godUsed){toast('You have already used God Mode in this life.');return}godMode();return}
+  popup('Use God Mode?','You can use God Mode once per life. This life will then be marked as assisted and can no longer earn achievements.',[['Use it',()=>{LEG.useGod();then(godMode)}],['Not now',null]])};
 $('#bTime').onclick=()=>{stack=[];timeMachine()};
 $('#bNew').onclick=()=>{stack=[];newLifeMenu()};
 document.addEventListener('keydown',e=>{if(e.key===' '&&ov.hidden&&document.activeElement===document.body&&S&&S.alive){e.preventDefault();ageUp()}});

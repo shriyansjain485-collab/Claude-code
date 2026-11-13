@@ -68,7 +68,7 @@ const CAR = (() => {
     j.salary = Math.round(j.salary * (1 + rnd(1, 3) / 100)); ECO.earn(j.salary); j.years++; j.inLevel++; S.flags.lastPay = j.salary; S.flags.worked = true;
     if (j.insured) { const c = Math.round(j.salary * K.insurance.cost); S.money -= c; }
     // performance follows your age curve, stress and reputation
-    let drift = rnd(-6, 6);
+    let drift = rnd(-6, 6) + (LEG.has('ambitious') ? 2 : 0) - (LEG.has('lazy') ? 2 : 0);
     if (a < r.peak[0]) drift += 1;
     if (a > r.peak[1]) drift -= Math.ceil((a - r.peak[1]) / 4);
     if (j.stress > 70) drift -= 3;
