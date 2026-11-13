@@ -41,6 +41,19 @@ window.BAL = {
   },
   // Diminishing returns on very large holdings: only this fraction of a gain applies to the slice above each size.
   sizeDamp: [[0, 1], [10e6, 0.85], [100e6, 0.65], [1e9, 0.45], [10e9, 0.3], [100e9, 0.15]],
+  // Stock & crypto market (market.js). Chances are per year.
+  market: {
+    fee: 0.002,          // trading fee on every buy and sell
+    driftShare: 0.35,    // how much of each ticker's own trend (d in market.js) applies on top of the market cycle
+    sectorNews: 0.18,    // chance each sector gets a big news story
+    cryptoNews: 0.3,     // chance of a big crypto-wide story
+    companyEvent: 0.06,  // chance each company has earnings news, a scandal, a hit product, a takeover...
+    memePump: 0.06,      // chance a meme coin goes viral
+    hack: 0.03,          // chance a coin gets hacked
+    stableBreak: 0.015,  // chance the stablecoin loses its peg
+    dayTradeVol: 0.12,   // typical day-trading swing (smarts give a small edge)
+    history: 30,         // years of price history kept for charts
+  },
   bonds: { gov: 0.035, corp: 0.06, junk: 0.11, corpDefault: 0.02, junkDefault: 0.07, badTimesDefaultMult: 2.5 },
 
   /* ---------- the cost of living ---------- */

@@ -143,7 +143,7 @@ nav button:disabled{opacity:.4;cursor:not-allowed}
 .item:disabled>*{opacity:.45}
 .item .t{flex:1;min-width:0}
 .item .t b{display:block;font-weight:800;line-height:1.25}
-.item .t span{display:block;font-size:13px;color:var(--muted);font-weight:600}
+.item .t>span{display:block;font-size:13px;color:var(--muted);font-weight:600}
 .item .r{font-weight:800;font-size:14px;color:var(--ink);text-align:right;flex:none}
 .item .arrow{color:var(--muted);font-size:20px;font-weight:700}
 .sec{margin:16px 4px 7px;font-size:12px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.07em}
@@ -317,6 +317,11 @@ nav button.age.pulse{animation:agepulse .3s ease-out}
 .rl-dia{width:20px;height:20px;transform:rotate(45deg);border:1.5px solid #fff;display:block}.rl-dia.r{background:#C8312F}.rl-dia.k{background:#1B1F2B}
 .rl-chip{position:absolute;top:-7px;right:-7px;min-width:24px;height:24px;padding:0 4px;border-radius:12px;background:#FFD54A;color:#3A2A00;border:2px dashed #fff;font-family:var(--body,inherit);font-size:10px;font-weight:800;display:grid;place-items:center;z-index:2;box-shadow:0 2px 3px rgba(0,0,0,.35);pointer-events:none}
 @media (prefers-reduced-motion:reduce){.rl-ball.spin{animation:none}}
+.mk-spark{margin:6px 0 10px}.mk-spark.down .nwl{stroke:var(--bad)}.mk-spark.down .nwa{fill:color-mix(in srgb,var(--bad) 14%,transparent)}
+.mk-alloc{display:flex;flex-direction:column;gap:7px;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:10px 12px;margin-bottom:8px}
+.mk-arow{display:grid;grid-template-columns:84px 1fr 40px;align-items:center;gap:10px;font-size:13px;font-weight:700}
+.mk-arow .mini{max-width:none;height:9px;margin:0}.mk-arow .mini i{background:var(--blue)}.mk-arow b{text-align:right}
+.item .t span.good{color:var(--good)}.item .t span.bad{color:var(--bad)}.kv span.good{color:var(--good)}.kv span.bad{color:var(--bad)}
 @media (max-width:420px){.chips{margin-top:8px}.chip{padding:3px 9px;font-size:11.5px}}
 </style>
 
@@ -350,6 +355,7 @@ nav button.age.pulse{animation:agepulse .3s ease-out}
 <script src="format.js"></script>
 <script src="balance.js"></script>
 <script src="economy.js"></script>
+<script src="market.js"></script>
 <script src="careers.js"></script>
 <script src="events.js"></script>
 <script src="legacy.js"></script>
@@ -553,10 +559,7 @@ const ARTWORKS=['Blue Harbor at Dusk','Study of a Red Chair','The Quiet Orchard'
 const COLLECTIBLES=[['Gold coin from 1857',40e3],['Signed championship baseball bat',25e3],['Vintage space-program flight suit',120e3],['Dinosaur fossil skull',900e3],['Iron meteorite',60e3],['First-edition novel from 1925',85e3],['Antique grandfather clock',18e3],['Qing-era porcelain vase',300e3],['Medieval knight\'s helmet',150e3],['Original arcade cabinet',12e3],['Rare stamp sheet',70e3],['Victorian music box',9e3],['Ancient Roman oil lamp',22e3],['Signed concert guitar',55e3]];
 const CLASSICS=[['1961 roadster',180e3],['1957 gull-wing coupe',1.4e6],['1969 muscle car',95e3],['1938 grand touring saloon',600e3],['1972 rally coupe',140e3],['1955 racing spyder',2.5e6]];
 const STORAGE=['A dusty 5×10 unit with a padlock rusted shut','A 10×10 unit stacked with taped boxes','A 10×20 unit with a tarp over something large','A climate-controlled unit with wooden crates','A unit full of old furniture and garbage bags'];
-const MARKET=[
- {s:'NWR',n:'Northwind Robotics',p:84,d:.07,v:.28},{s:'HLO',n:'Helio Solar',p:31,d:.06,v:.35},{s:'GRN',n:'Grainline Foods',p:56,d:.04,v:.12},
- {s:'QTX',n:'Quantix Bio',p:22,d:.05,v:.5},{s:'VLA',n:'Vela Airlines',p:18,d:.03,v:.3},{s:'BYH',n:'ByteHarbor',p:140,d:.08,v:.25},
- {s:'GLM',n:'Glimcoin',p:2.4,d:.15,v:.9,c:1},{s:'RBL',n:'Rubble Token',p:.08,d:.1,v:1.2,c:1},{s:'NMB',n:'Nimbus Chain',p:310,d:.12,v:.7,c:1}];
+const MARKET=MKT.LIST;
 const ILL=[{n:'flu',h:6,cure:.9,cost:200,heal:.7,min:0},{n:'migraines',h:4,cure:.7,cost:400,heal:.5,min:0},{n:'a broken arm',h:6,cure:.95,cost:1500,heal:.6,min:4},{n:'pneumonia',h:12,cure:.8,cost:3e3,heal:.45,min:0},{n:'depression',h:3,hap:12,cure:.55,cost:1.5e3,heal:.3,min:13},{n:'diabetes',h:6,cure:.3,cost:4e3,heal:0,chronic:1,min:35},{n:'high blood pressure',h:5,cure:.5,cost:800,heal:0,chronic:1,min:35},{n:'heart disease',h:12,cure:.45,cost:25e3,heal:.03,chronic:1,min:45},{n:'cancer',h:20,cure:.45,cost:60e3,heal:.08,min:45}];
 const PETS=[['dog',300],['cat',150],['rabbit',60],['parrot',800],['horse',8e3],['tortoise',120]];
 const PETNAMES=['Biscuit','Pepper','Juniper','Mochi','Rocket','Olive','Pickle','Nimbus','Waffles','Sable'];
@@ -600,16 +603,16 @@ function divorceCost(){return Math.round(BAL.events.divorceShare*(S.flags.prenup
 function breakUp(p,msg){if(p.rel==='Spouse'){const half=divorceCost();S.money-=half;msg+=half?` The divorce cost me ${fmt(half)}.`:''}p.rel='Ex';p.bond=clamp(p.bond-20);L(msg,'bad');st('happy',-12)}
 function bankrupt(){const seized=S.assets.reduce((a,x)=>a+x.value,0);S.assets=[];S.invest=0;S.port={};S.money=0;S.flags.bankrupt=S.age;st('happy',-15);L(`I declared bankruptcy. My debts were wiped out${seized?` and ${fmt(seized)} of my possessions were sold off`:''}.`,'bad')}
 function migrate(){S.acts=S.acts||{};S.flags=S.flags||{};S.seen=S.seen||{};S.look=S.look||{skin:R(0,5),hair:R(0,5),shirt:R(0,5)};
-  LEG.migrate();if(S.rep==null)S.rep=50;RULES.ensureBase();if(S.job)CAR.ensure(S.job);S.pets=S.pets||[];S.biz=S.biz||[];ECO.migrate();S.assets=S.assets||[];S.ill=S.ill||[];S.snaps=S.snaps||[];S.year0=S.year0||2026;S.edu.grad=S.edu.grad||[];ensureMarket();UX.migrate()}
+  LEG.migrate();if(S.rep==null)S.rep=50;RULES.ensureBase();if(S.job)CAR.ensure(S.job);S.pets=S.pets||[];S.biz=S.biz||[];ECO.migrate();S.assets=S.assets||[];S.ill=S.ill||[];S.snaps=S.snaps||[];S.year0=S.year0||2026;S.edu.grad=S.edu.grad||[];ensureMarket();MKT.migrate();UX.migrate()}
 function L(t,cls){const y=S.log[S.log.length-1];y.lines.push({t,c:cls||''});LEG.observe(t,cls)}
 const st=(k,d)=>{S.stats[k]=clamp(S.stats[k]+RULES.gainScale(S.stats[k],d))};
 const first=()=>S.name.split(' ')[0];
 const he=()=>S.g==='M';
 const alive=r=>S.people.filter(p=>p.alive&&(!r||p.rel.startsWith(r)));
 const partner=()=>S.people.find(p=>p.alive&&['Partner','Fiancé','Fiancée','Spouse'].includes(p.rel));
-const portValue=()=>{ensureMarket();return Object.entries(S.port).reduce((a,[k,n])=>a+n*S.market[k],0)};
+const portValue=()=>MKT.value();
 const netWorth=()=>S.money+S.invest+portValue()+(S.inv2?inv2Value():0)+(S.zoo?zooValue(S.zoo):0)+(S.museum?800e3:0)+S.assets.reduce((a,x)=>a+x.value-(x.loan||0),0)+S.biz.reduce((a,b)=>a+b.value*(b.own==null?100:b.own)/100-(b.loan||0),0);
-function ensureMarket(){if(!S.market){S.market={};MARKET.forEach(m=>S.market[m.s]=m.p)}if(!S.port)S.port={}}
+function ensureMarket(){MKT.ensure()}
 
 function save(){try{localStorage.setItem(SAVE,JSON.stringify({S,nextId}))}catch(e){}}
 function load(){try{const d=JSON.parse(localStorage.getItem(SAVE)||'null');if(d&&d.S){S=d.S;nextId=d.nextId||9999;migrate();return true}}catch(e){}return false}
@@ -1848,17 +1851,7 @@ function assetYear(){
   if(rent)L(`My rental properties brought in ${fmt(rent)} this year.`,'good');
   if(ptax)L(`I paid ${fmt(ptax)} in property tax.`);
 }
-function marketYear(){
-  ensureMarket();S.portBasis=S.portBasis||{};
-  MARKET.forEach(m=>{const cls=m.c?'crypto':'stock';const a=BAL.assetClass[cls];
-    const r=ECO.ret(cls,m.d*0.6,m.v/(m.c?0.9:0.3));const old=S.market[m.s],held=(S.port[m.s]||0)*old;
-    let np=old*(1+r);
-    if(m.c&&np<m.p*a.delistBelow){if(held>0)L(`${m.n} collapsed and was delisted. My ${fmt(held)} stake is gone.`,'bad');S.port[m.s]=0;S.portBasis[m.s]=0;S.market[m.s]=m.p;return}
-    S.market[m.s]=+np.toFixed(4);
-    if(held>0&&r>0){const want=held+ECO.gain(held,r);S.port[m.s]=want/S.market[m.s]}});
-  const held=Object.keys(S.port).filter(k=>S.port[k]>0);
-  if(held.length){const v=portValue();L(`My stocks and crypto are worth ${fmt(v)}.`)}
-}
+function marketYear(){MKT.year()}
 function assetsMenu(){sheet('Assets',api=>{
   const loans=S.assets.reduce((a,x)=>a+(x.loan||0),0);
   api.html(`<div class="kv"><span>Cash</span><span>${fmt(S.money)}</span><span>Index fund</span><span>${fmt(S.invest)}</span><span>Stocks &amp; crypto</span><span>${fmt(portValue())}</span><span>Property &amp; possessions</span><span>${fmt(S.assets.reduce((a,x)=>a+x.value,0))}</span><span>Businesses</span><span>${fmt(S.biz.reduce((a,x)=>a+x.value,0))}</span>${loans?`<span>Mortgages owed</span><span>-${fmt(loans)}</span>`:''}<span><b>Net worth</b></span><span><b>${fmt(netWorth())}</b></span></div>`);
@@ -1886,7 +1879,7 @@ function assetsMenu(){sheet('Assets',api=>{
   api.item('Sell at auction','Put something you own under the hammer',null,sellAtAuction,!S.assets.length);
   api.sec('Investing');
   api.item('Bonds, gold & startups','Interest, safe havens and angel investing',null,investMenu,false,['chart','green']);
-  api.item('Stock & crypto market','Nine tickers, prices move every year',null,marketMenu);
+  api.item('Stock & crypto market',`${MKT.LIST.length} stocks, funds and coins · news, dividends, orders`,null,marketMenu);
   api.item('Index fund',`Balance ${fmt(S.invest)}`,null,()=>sheet('Index fund',a=>{[1e3,1e4,1e5,1e6].forEach(v=>a.item(`Invest ${fmt(v)}`,'',null,act('',()=>{if(!spend(v))return;S.invest+=v;S.investBasis=(S.investBasis||0)+v;L(`I invested ${fmt(v)} in an index fund.`)}),S.money<v));a.item('Withdraw everything',fmt(S.invest),null,act('',()=>{S.money+=S.invest;L(`I withdrew ${fmt(S.invest)} from my index fund.`);ECO.capGains(S.invest-(S.investBasis||0),'my index fund');S.invest=0;S.investBasis=0}),S.invest<=0)}));
 });}
 function assetDetail(id){sheet('Asset',api=>{
@@ -2032,18 +2025,65 @@ function storageAuctions(){
 }
 
 /* ---------- market ---------- */
-function marketMenu(){ensureMarket();sheet('Stock & crypto market',api=>{
-  api.sub(`Prices change once a year. Crypto can crash or skyrocket. You have ${fmt(S.money)}; holdings worth ${fmt(portValue())}.`);
-  [['Stocks',MARKET.filter(m=>!m.c)],['Crypto',MARKET.filter(m=>m.c)]].forEach(([t,list])=>{api.sec(t);
-    list.forEach(m=>{const pr=S.market[m.s],n=S.port[m.s]||0;
-      api.item(`${m.n} <span class="pill">${m.s}</span>`,n?`You own ${n.toLocaleString(undefined,{maximumFractionDigits:2})} · worth ${fmt(n*pr)}`:'Not held',pr<1?'$'+pr.toFixed(4):fmt(pr),()=>sheet(m.n,a=>{
-        const pr2=S.market[m.s],n2=S.port[m.s]||0;
-        a.html(`<div class="kv"><span>Price</span><span>${pr2<1?'$'+pr2.toFixed(4):fmt(pr2)}</span><span>Held</span><span>${n2.toLocaleString(undefined,{maximumFractionDigits:2})}</span><span>Value</span><span>${fmt(n2*pr2)}</span></div>`);
-        [1e3,1e4,1e5,1e6].forEach(v=>a.item(`Buy ${fmt(v)}`,'',null,()=>{S.money-=v;S.port[m.s]=(S.port[m.s]||0)+v/pr2;S.portBasis=S.portBasis||{};S.portBasis[m.s]=(S.portBasis[m.s]||0)+v;L(`I bought ${fmt(v)} of ${m.n}.`);render();refresh()},S.money<v));
-        a.item('Sell half','',fmt(n2*pr2/2),()=>{S.money+=Math.round(n2*pr2/2);S.port[m.s]=n2/2;S.portBasis=S.portBasis||{};const bs=(S.portBasis[m.s]||0)/2;S.portBasis[m.s]=bs;L(`I sold half my ${m.n} for ${fmt(n2*pr2/2)}.`);ECO.capGains(n2*pr2/2-bs,m.n);render();refresh()},!n2);
-        a.item('Sell everything','',fmt(n2*pr2),()=>{S.money+=Math.round(n2*pr2);S.port[m.s]=0;S.portBasis=S.portBasis||{};const bs=S.portBasis[m.s]||0;S.portBasis[m.s]=0;L(`I sold all my ${m.n} for ${fmt(n2*pr2)}.`);ECO.capGains(n2*pr2-bs,m.n);render();refresh()},!n2);
-      }))})});
-});}
+/* ---------- stock & crypto market (screens; the rules are in market.js) ---------- */
+const MKT_GROUPS=[['Stocks','Companies, by sector',m=>m.kind==='stock',['chart','blue']],['Funds (ETFs)','A basket of companies, much calmer',m=>m.kind==='etf',['box','teal']],['Penny stocks','Tiny companies: can 10× or go bust',m=>m.kind==='penny',['bolt','orange']],['Crypto','Coins and a stablecoin',m=>m.kind==='coin'||m.kind==='stable',['coin','gold']],['Meme coins','Pure hype. Viral or worthless',m=>m.kind==='meme',['smile','pink']]];
+const pctTxt=x=>`${x>=0?'+':''}${Math.round(x*100)}%`;
+const pctCls=x=>x>0.005?'good':x<-0.005?'bad':'';
+function spark(h){if(!h||h.length<2)return '<p class="sub" style="margin:4px 2px">The price chart starts after one year.</p>';
+  const w=320,ht=84,lo=Math.min(...h),hi=Math.max(...h),rg=hi-lo||1,x=i=>i/(h.length-1)*w,y=v=>ht-4-(v-lo)/rg*(ht-8);
+  const pts=h.map((v,i)=>`${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' '),up=h[h.length-1]>=h[0];
+  return `<div class="nwc mk-spark ${up?'up':'down'}"><svg viewBox="0 0 ${w} ${ht}" preserveAspectRatio="none" role="img" aria-label="Price over ${h.length-1} years"><polygon class="nwa" points="0,${ht} ${pts} ${w},${ht}"/><polyline class="nwl" points="${pts}"/></svg><div class="nwx"><span>${h.length-1} years ago</span><span>Low ${MKT.fmtPrice(lo)} · High ${MKT.fmtPrice(hi)}</span><span>Now</span></div></div>`}
+function mkRow(api,m){const pr=MKT.price(m.s),n=MKT.held(m.s),ch=MKT.change(m.s);
+  api.item(`${esc(m.n)} <span class="pill">${m.s}</span>`,`${m.kind==='stock'?m.sec+' · ':''}<span class="${pctCls(ch)}">${pctTxt(ch)} this year</span>${m.div?` · ${MKT.isCrypto(m)?'stakes':'pays'} ${+(m.div*100).toFixed(1)}%`:''}${n>0?` · you own ${fmt(n*pr)}`:''}`,MKT.fmtPrice(pr),()=>tickerMenu(m.s),false,MKT.isCrypto(m)?['coin','gold']:['chart',ch>=0?'green':'red'])}
+function marketMenu(){MKT.ensure();sheet('Stock & crypto market',api=>{
+  const sm=MKT.summary();
+  api.sub(`Prices move once a year, with news, earnings surprises and crashes along the way. You have ${fmt(S.money)} in cash.`);
+  api.item('My portfolio',sm.rows.length?`${sm.rows.length} holdings · <span class="${pctCls(sm.gain)}">${sm.gain>=0?'up':'down'} ${fmt(Math.abs(sm.gain))}</span>`:'Nothing yet',fmt(sm.value),portfolioMenu,false,['briefcase','blue']);
+  api.item('Market news',S.mnews&&S.mnews.length?esc(FMT.plain(S.mnews[0].t)):'Quiet so far',null,newsMenu,false,['book','purple']);
+  api.item('Day trading','Quick trades within the year. Smarts help, luck matters more.',null,dayTradeMenu,S.age<18,['bolt','orange']);
+  api.sec('Browse');
+  MKT_GROUPS.forEach(([t,d,f,ic])=>{const list=MKT.LIST.filter(f);api.item(t,`${d} · ${list.length}`,null,()=>sheet(t,a=>{
+    if(t==='Stocks'){[...new Set(list.map(m=>m.sec))].forEach(sec=>{a.sec(sec);list.filter(m=>m.sec===sec).forEach(m=>mkRow(a,m))})}
+    else{a.sub(d+'.');list.forEach(m=>mkRow(a,m))}}),false,ic)});
+  const mv=MKT.LIST.filter(m=>m.kind!=='stable'&&(S.mhist[m.s]||[]).length>1).sort((x,y)=>MKT.change(y.s)-MKT.change(x.s));
+  if(mv.length){api.sec('Biggest winners this year');mv.slice(0,3).forEach(m=>mkRow(api,m));api.sec('Biggest losers this year');mv.slice(-3).reverse().forEach(m=>mkRow(api,m))}
+})}
+function portfolioMenu(){sheet('My portfolio',api=>{const sm=MKT.summary();
+  if(!sm.rows.length){api.sub('You do not own any stocks, funds or coins yet. Browse the market to buy some.');return}
+  api.html(`<div class="kv"><span>Value</span><span>${fmt(sm.value)}</span><span>You paid</span><span>${fmt(sm.basis)}</span><span>Gain or loss</span><span class="${pctCls(sm.gain)}">${sm.gain>=0?'+':'-'}${fmt(Math.abs(sm.gain))} (${sm.basis?pctTxt(sm.gain/sm.basis):'–'})</span><span>Dividends and staking</span><span>about ${fmt(sm.yieldY)} a year</span></div>`);
+  api.sec('Where your money is');
+  api.html(`<div class="mk-alloc">${Object.entries(sm.bySec).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<div class="mk-arow"><span>${esc(k)}</span><div class="mini"><i style="width:${Math.max(2,v/sm.value*100)}%"></i></div><b>${Math.round(v/sm.value*100)}%</b></div>`).join('')}</div>`);
+  api.sec('Holdings');sm.rows.sort((a,b)=>b.v-a.v).forEach(r=>{const g=r.v-r.b,o=S.orders[r.m.s];
+    api.item(`${esc(r.m.n)} <span class="pill">${r.m.s}</span>`,`<span class="${pctCls(g)}">${g>=0?'+':'-'}${fmt(Math.abs(g))}${r.b?' ('+pctTxt(g/r.b)+')':''}</span>${o?' · order set':''}`,fmt(r.v),()=>tickerMenu(r.m.s),false,MKT.isCrypto(r.m)?['coin','gold']:['chart',g>=0?'green':'red'])});
+  api.sec('Settings');
+  api.item(S.flags.drip?'Stop reinvesting dividends':'Reinvest dividends automatically',S.flags.drip?'Dividends and staking rewards buy more of the same holding':'Dividends and staking rewards are paid to you in cash',null,()=>{S.flags.drip=!S.flags.drip;toast(S.flags.drip?'Dividends will now be reinvested.':'Dividends will now be paid in cash.');refresh()},false,['coin','green']);
+  api.item('Sell everything','Turn your whole portfolio into cash',fmt(sm.value),UX.sure('Sell everything?',`You will sell all ${sm.rows.length} holdings for about ${fmt(sm.value)} and pay capital gains tax on any profit.`,'Sell everything',()=>{sm.rows.forEach(r=>MKT.sell(r.m.s,1));render()}),false,['alert','red']);
+})}
+function newsMenu(){sheet('Market news',api=>{const ns=S.mnews||[];
+  if(!ns.length){api.sub('No big market stories yet. Check back after a year or two.');return}
+  api.sub('The biggest stories from the last few years. News moves prices in the year it happens.');
+  api.html(`<div class="auclog">${ns.map(n=>`<p style="font-weight:600;color:var(--ink)"><b>Age ${n.a}:</b> ${esc(n.t)}</p>`).join('')}</div>`)})}
+function dayTradeMenu(){sheet('Day trading',api=>{
+  api.sub(`You have ${fmt(S.money)}. You can make up to 3 day trades a year. Most day traders lose money. Your smarts (${S.stats.smarts}%) give you a small edge.`);
+  api.html(`<p class="sub">Trades left this year: <b>${Math.max(0,3-(S.acts.daytrade||0))}</b></p>`);
+  [1e3,1e4,1e5,1e6].forEach(v=>api.item(`Trade with ${fmt(v)}`,'Win or lose up to about half of it',null,act('',()=>{if(S.money<v){toast(`You need ${fmt(v)} in cash.`);return}if(!limit('daytrade',3,'You are out of day trades for this year.'))return;const g=MKT.dayTrade(v);toast(g>=0?`You made ${fmt(g)}.`:`You lost ${fmt(-g)}.`)}),S.money<v,['bolt','orange']));
+})}
+function tickerMenu(s){const m=MKT.BY[s];sheet(m.n,api=>{
+  const pr=MKT.price(s),n=MKT.held(s),v=n*pr,b=MKT.basis(s),h=S.mhist[s]||[],ch=MKT.change(s),o=S.orders[s];
+  const five=h.length>5?h[h.length-1]/h[h.length-6]-1:null;
+  api.html(`<p class="sub">${esc(m.about)}</p>${spark(h)}<div class="kv"><span>Price</span><span>${MKT.fmtPrice(pr)}</span><span>This year</span><span class="${pctCls(ch)}">${pctTxt(ch)}</span>${five!=null?`<span>Last 5 years</span><span class="${pctCls(five)}">${pctTxt(five)}</span>`:''}<span>Type</span><span>${{stock:m.sec+' stock',etf:'Fund (ETF)',penny:'Penny stock',coin:'Crypto',meme:'Meme coin',stable:'Stablecoin'}[m.kind]}</span>${m.div?`<span>${MKT.isCrypto(m)?'Staking reward':'Dividend'}</span><span>${+(m.div*100).toFixed(1)}% a year</span>`:''}<span>Risk</span><span>${m.v>=.8?'Extreme':m.v>=.45?'High':m.v>=.2?'Medium':m.v>0?'Low':'Very low'}</span>${n>0?`<span>You own</span><span>${n.toLocaleString(undefined,{maximumFractionDigits:n<1?6:2})} ${MKT.isCrypto(m)?'coins':'shares'}</span><span>Worth</span><span>${fmt(v)}</span><span>Gain or loss</span><span class="${pctCls(v-b)}">${v-b>=0?'+':'-'}${fmt(Math.abs(v-b))}${b?' ('+pctTxt((v-b)/b)+')':''}</span>`:''}</div>`);
+  const bought=()=>{render();refresh()};
+  api.sec('Buy');
+  [1e2,1e3,1e4,1e5,1e6,1e7].filter(x=>x<=Math.max(1e4,S.money*4)).forEach(x=>api.item(`Buy ${fmt(x)}`,'',null,()=>{if(MKT.buy(s,x))bought();else toast(`You need ${fmt(x)} in cash.`)},S.money<x,['plus','green']));
+  [[.25,'a quarter of'],[.5,'half of'],[1,'all of']].forEach(([f,l])=>{const x=Math.floor(Math.max(0,S.money)*f);if(x>=100)api.item(`Buy with ${l} my cash`,'',fmt(x),()=>{if(MKT.buy(s,Math.floor(Math.max(0,S.money)*f)))bought()},false,['plus','green'])});
+  if(n>0){api.sec('Sell');
+    [[.25,'Sell a quarter'],[.5,'Sell half'],[1,'Sell everything']].forEach(([f,l])=>api.item(l,'',fmt(v*f),()=>{MKT.sell(s,f);bought()},false,['coin','orange']));
+    api.sec('Automatic orders');
+    api.sub(o?`Set: ${o.tp?`sell if it reaches ${o.tp}× what you paid`:''}${o.tp&&o.sl?', and ':''}${o.sl?`sell if it falls ${Math.round((1-o.sl)*100)}% below what you paid`:''}. Orders are checked once a year.`:'Sell automatically when your gain or loss reaches a level you pick. Checked once a year.');
+    [[1.5,'+50%'],[2,'double'],[3,'triple']].forEach(([x,l])=>api.item(`Take profit at ${l}`,'Lock in a gain',o&&o.tp===x?'<span class="pill">Set</span>':null,()=>{MKT.setOrder(s,{...(o||{}),tp:o&&o.tp===x?0:x});refresh()},false,['star','green']));
+    [[.8,'20%'],[.65,'35%'],[.5,'50%']].forEach(([x,l])=>api.item(`Stop loss at −${l}`,'Limit the damage',o&&o.sl===x?'<span class="pill">Set</span>':null,()=>{MKT.setOrder(s,{...(o||{}),sl:o&&o.sl===x?0:x});refresh()},false,['alert','red']));
+  }
+})}
 
 /* ---------- people ---------- */
 function peopleMenu(){sheet('Relationships',api=>{
