@@ -216,6 +216,85 @@ const UX = (() => {
     });
   }
 
+  /* ---------- roulette: a real table with chips (single zero, European wheel) ---------- */
+  const REDS = [1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36];
+  const colorOf = n => n === 0 ? 'z' : REDS.includes(n) ? 'r' : 'k';
+  // Every bet: which numbers it covers and what it pays (to 1).
+  function rlBet(k) {
+    const all = Array.from({ length: 36 }, (_, i) => i + 1);
+    if (/^n\d+$/.test(k)) return { nums: [+k.slice(1)], pays: 35, name: k.slice(1) };
+    const o = {
+      red: [all.filter(n => REDS.includes(n)), 1, 'Red'], black: [all.filter(n => !REDS.includes(n)), 1, 'Black'],
+      odd: [all.filter(n => n % 2), 1, 'Odd'], even: [all.filter(n => n % 2 === 0), 1, 'Even'],
+      low: [all.filter(n => n <= 18), 1, '1–18'], high: [all.filter(n => n >= 19), 1, '19–36'],
+      d1: [all.filter(n => n <= 12), 2, '1st 12'], d2: [all.filter(n => n > 12 && n <= 24), 2, '2nd 12'], d3: [all.filter(n => n > 24), 2, '3rd 12'],
+      c1: [all.filter(n => n % 3 === 1), 2, 'Column 1'], c2: [all.filter(n => n % 3 === 2), 2, 'Column 2'], c3: [all.filter(n => n % 3 === 0), 2, 'Column 3'],
+    }[k];
+    return o && { nums: o[0], pays: o[1], name: o[2] };
+  }
+  const RL = { bets: {}, chip: 100, last: null, hist: [], msg: '', cls: '', spin: false };
+  const short = v => '$' + (v >= 1e6 ? +(v / 1e6).toFixed(1) + 'M' : v >= 1e3 ? +(v / 1e3).toFixed(1) + 'K' : v);
+  function roulette() {
+    RL.msg = ''; RL.cls = ''; RL.spin = false;
+    const staked = () => Object.values(RL.bets).reduce((a, b) => a + b, 0);
+    function place(k) {
+      if (RL.spin) return;
+      if (S.money < staked() + RL.chip) { toast(`You need ${fmt(staked() + RL.chip)} in cash to cover all your chips.`); return; }
+      RL.bets[k] = (RL.bets[k] || 0) + RL.chip; RL.msg = ''; refresh();
+    }
+    function spin() {
+      const tot = staked(); if (!tot || RL.spin) { if (!tot) toast('Tap the table to place a chip first.'); return; }
+      if (S.money < tot) { toast(`You need ${fmt(tot)} in cash to cover your bets.`); return; }
+      const n = R(0, 36); let back = 0; const wins = [];
+      for (const [k, v] of Object.entries(RL.bets)) { const b = rlBet(k); if (b.nums.includes(n)) { back += v * (b.pays + 1); wins.push(b.name); } }
+      const net = back - tot; S.money += net;   // settled straight away, so closing the table mid-spin loses nothing
+      RL.prev = { ...RL.bets }; RL.last = n; RL.hist = [n].concat(RL.hist).slice(0, 12);
+      const col = { z: 'green', r: 'red', k: 'black' }[colorOf(n)];
+      RL.msg = net > 0 ? `${n} ${col}. You win ${fmt(net)}!` : net === 0 ? `${n} ${col}. You break even.` : `${n} ${col}. You lose ${fmt(-net)}.`;
+      RL.cls = net > 0 ? 'up' : net < 0 ? 'down' : '';
+      L(net > 0 ? `Casino: the roulette ball landed on ${n} ${col} and I won ${fmt(net)}.` : net < 0 ? `Casino: the roulette ball landed on ${n} ${col} and I lost ${fmt(-net)}.` : `Casino: I broke even on a spin of the roulette wheel.`, net > 0 ? 'good' : net < 0 ? 'bad' : '');
+      RL.bets = {}; render(); save();
+      // the show: the ball runs through numbers, slowing down, then stops on the result
+      RL.spin = true; refresh();
+      const ball = document.querySelector('#rlBall'); let d = 45, t = 0;
+      const tick = () => {
+        const b = document.querySelector('#rlBall');
+        if (!b || t > 1500) { RL.spin = false; refresh(); return; }
+        const x = R(0, 36); b.textContent = x; b.className = 'rl-ball ' + colorOf(x);
+        t += d; d *= 1.12; setTimeout(tick, d);
+      };
+      if (ball && !matchMedia('(prefers-reduced-motion: reduce)').matches) tick(); else { RL.spin = false; refresh(); }
+    }
+    sheet('Roulette', api => {
+      const tot = staked();
+      api.sub(`You have ${fmt(S.money)}. Pick a chip, tap the table to place it, then spin. A single number pays 35 to 1, dozens and columns 2 to 1, and red, black, odd, even, high and low 1 to 1. Zero belongs to the house.`);
+      const ballN = RL.last == null ? '' : RL.last;
+      const chipRow = [100, 1e3, 1e4, 1e5, 1e6].map(v => `<button type="button" class="rl-chipbtn${RL.chip === v ? ' on' : ''}" data-chip="${v}" aria-pressed="${RL.chip === v}" ${S.money < v ? 'disabled' : ''}>${short(v)}</button>`).join('');
+      const cell = (k, label, cls, style) => { const v = RL.bets[k]; const hit = RL.last != null && !RL.spin && rlBet(k).nums.includes(RL.last);
+        return `<button type="button" class="rl-c ${cls}${hit ? ' hit' : ''}" data-rl="${k}" style="${style}" aria-label="Bet on ${rlBet(k).name}${v ? ', ' + short(v) + ' placed' : ''}">${label}${v ? `<span class="rl-chip">${short(v)}</span>` : ''}</button>`; };
+      let g = `<button type="button" class="rl-c z${RL.last === 0 && !RL.spin ? ' hit' : ''}" data-rl="n0" style="grid-column:2/5;grid-row:1" aria-label="Bet on 0${RL.bets.n0 ? ', ' + short(RL.bets.n0) + ' placed' : ''}">0${RL.bets.n0 ? `<span class="rl-chip">${short(RL.bets.n0)}</span>` : ''}</button>`;
+      for (let n = 1; n <= 36; n++) g += cell('n' + n, n, colorOf(n), `grid-column:${2 + (n - 1) % 3};grid-row:${2 + Math.floor((n - 1) / 3)}`);
+      ['d1', 'd2', 'd3'].forEach((k, i) => g += cell(k, `<span class="rl-v">${rlBet(k).name}</span>`, 'o', `grid-column:1;grid-row:${2 + i * 4}/span 4`));
+      [['low', '1–18'], ['even', 'Even'], ['red', '<i class="rl-dia r"></i>'], ['black', '<i class="rl-dia k"></i>'], ['odd', 'Odd'], ['high', '19–36']]
+        .forEach(([k, l], i) => g += cell(k, l, 'o', `grid-column:5;grid-row:${2 + i * 2}/span 2`));
+      ['c1', 'c2', 'c3'].forEach((k, i) => g += cell(k, '2:1', 'o', `grid-column:${2 + i};grid-row:14`));
+      const hist = RL.hist.map(n => `<span class="rl-h ${colorOf(n)}">${n}</span>`).join('');
+      const box = api.html(`<div class="rl">
+        <div class="rl-top"><div id="rlBall" class="rl-ball ${RL.last == null ? 'idle' : colorOf(RL.last)}${RL.spin ? ' spin' : ''}">${RL.last == null ? '?' : ballN}</div>
+          <div class="rl-info"><small>On the table</small><b>${fmt(tot)}</b><p class="bj-msg ${RL.spin ? '' : RL.cls}">${RL.spin ? 'The ball is spinning…' : RL.msg || (tot ? 'Ready when you are.' : 'Place your bets.')}</p></div></div>
+        ${hist ? `<div class="rl-hist"><small>Last spins</small>${hist}</div>` : ''}
+        <div class="rl-chips">${chipRow}</div>
+        <div class="rl-grid">${g}</div></div>`);
+      box.addEventListener('click', e => {
+        const c = e.target.closest('[data-chip]'); if (c) { RL.chip = +c.dataset.chip; refresh(); return; }
+        const b = e.target.closest('[data-rl]'); if (b) place(b.dataset.rl);
+      });
+      api.item(RL.spin ? 'Spinning…' : 'Spin the wheel', tot ? `${fmt(tot)} on the table` : 'Place a chip first', null, spin, RL.spin || !tot, ['dice', 'purple']);
+      if (tot) api.item('Clear my bets', 'Take your chips back', null, () => { if (RL.spin) return; RL.bets = {}; refresh(); }, RL.spin, ['close', 'red']);
+      else if (RL.prev) { const pt = Object.values(RL.prev).reduce((a, b) => a + b, 0); api.item('Repeat my last bets', fmt(pt), null, () => { if (S.money < pt) { toast(`You need ${fmt(pt)} in cash.`); return; } RL.bets = { ...RL.prev }; refresh(); }, RL.spin || S.money < pt, ['coin', 'gold']); }
+    });
+  }
+
   /* ---------- backup and restore ---------- */
   function backupMenu() {
     sheet('Backup & restore', api => {
@@ -303,5 +382,5 @@ const UX = (() => {
     if (id) { const b = el(id); if (b && !b.disabled) { e.preventDefault(); b.click(); } }
   });
 
-  return { applyTheme, lines, chips, side, profile, onDeath, pastLives, skip, swallow, sure, blackjack, menuTop, menu, migrate, year, deathExtra, welcome, chart, goalRows, GOALS };
+  return { applyTheme, lines, chips, side, profile, onDeath, pastLives, skip, swallow, sure, blackjack, roulette, rlBet, menuTop, menu, migrate, year, deathExtra, welcome, chart, goalRows, GOALS };
 })();

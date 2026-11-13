@@ -287,6 +287,36 @@ nav button.age.pulse{animation:agepulse .3s ease-out}
 .bj-msg{margin:0;font-weight:800;font-size:15.5px;text-align:center}
 .bj-msg.up{color:var(--good)}.bj-msg.down{color:var(--bad)}
 @media (prefers-reduced-motion:reduce){.pc{animation:none}}
+.rl{margin-bottom:10px}
+.rl-top{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:14px;background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:12px 14px;box-shadow:0 2px 0 var(--line)}
+.rl-ball{flex:none;width:66px;height:66px;border-radius:50%;display:grid;place-items:center;font-family:var(--display);font-weight:800;font-size:26px;color:#fff;border:5px solid #D9B45A;box-shadow:inset 0 -4px 0 rgba(0,0,0,.25)}
+.rl-ball.r{background:#C8312F}.rl-ball.k{background:#1B1F2B}.rl-ball.z{background:#12955A}.rl-ball.idle{background:var(--panel2);color:var(--muted)}
+.rl-ball.spin{animation:rlspin .5s linear infinite}
+@keyframes rlspin{to{transform:rotate(360deg)}}
+.rl-info{flex:1;min-width:0}.rl-info small,.rl-hist small{display:block;font-size:11.5px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.rl-info b{font-family:var(--display);font-size:20px}.rl-info .bj-msg{text-align:left;margin-top:2px}
+.rl-hist{display:flex;align-items:center;flex-wrap:wrap;gap:4px;margin:10px 2px 0}.rl-hist small{width:100%;margin-bottom:2px}
+.rl-h{min-width:26px;height:26px;padding:0 4px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:800;color:#fff}
+.rl-h.r{background:#C8312F}.rl-h.k{background:#1B1F2B}.rl-h.z{background:#12955A}
+.rl-chips{display:flex;gap:8px;justify-content:center;margin:12px 0}
+.rl-chipbtn{width:52px;height:52px;border-radius:50%;border:4px dashed rgba(255,255,255,.85);background:#2C64D8;color:#fff;font:inherit;font-weight:800;font-size:12.5px;cursor:pointer;box-shadow:0 0 0 2px #2C64D8,0 3px 0 rgba(0,0,0,.25)}
+.rl-chipbtn:nth-child(2){background:#C8312F;box-shadow:0 0 0 2px #C8312F,0 3px 0 rgba(0,0,0,.25)}
+.rl-chipbtn:nth-child(3){background:#12955A;box-shadow:0 0 0 2px #12955A,0 3px 0 rgba(0,0,0,.25)}
+.rl-chipbtn:nth-child(4){background:#1B1F2B;box-shadow:0 0 0 2px #1B1F2B,0 3px 0 rgba(0,0,0,.25)}
+.rl-chipbtn:nth-child(5){background:#8A4FD8;box-shadow:0 0 0 2px #8A4FD8,0 3px 0 rgba(0,0,0,.25)}
+.rl-chipbtn.on{transform:translateY(-4px);box-shadow:0 0 0 3px #FFD54A,0 6px 0 rgba(0,0,0,.25)}
+.rl-chipbtn:disabled{opacity:.35;cursor:not-allowed}
+.rl-grid{display:grid;grid-template-columns:.95fr 1fr 1fr 1fr .95fr;gap:4px;background:radial-gradient(circle at 50% 30%,#178a4c,#0c5f33);padding:10px;border-radius:18px;border:6px solid #6B4423;box-shadow:inset 0 0 18px rgba(0,0,0,.35)}
+.rl-c{position:relative;min-height:34px;border:1.5px solid rgba(255,255,255,.6);border-radius:7px;color:#fff;font:inherit;font-family:var(--display);font-weight:800;font-size:15px;display:grid;place-items:center;cursor:pointer;background:transparent;padding:0}
+.rl-c.r{background:#C8312F}.rl-c.k{background:#1B1F2B}.rl-c.z{background:#12955A;min-height:38px}
+.rl-c.o{font-size:13px}
+.rl-c:hover{filter:brightness(1.15)}
+.rl-c:focus-visible{outline:3px solid #FFD54A;outline-offset:1px}
+.rl-c.hit{box-shadow:0 0 0 3px #FFD54A,0 0 14px #FFD54A;z-index:1}
+.rl-v{writing-mode:vertical-rl;transform:rotate(180deg);letter-spacing:.04em}
+.rl-dia{width:20px;height:20px;transform:rotate(45deg);border:1.5px solid #fff;display:block}.rl-dia.r{background:#C8312F}.rl-dia.k{background:#1B1F2B}
+.rl-chip{position:absolute;top:-7px;right:-7px;min-width:24px;height:24px;padding:0 4px;border-radius:12px;background:#FFD54A;color:#3A2A00;border:2px dashed #fff;font-family:var(--body,inherit);font-size:10px;font-weight:800;display:grid;place-items:center;z-index:2;box-shadow:0 2px 3px rgba(0,0,0,.35);pointer-events:none}
+@media (prefers-reduced-motion:reduce){.rl-ball.spin{animation:none}}
 @media (max-width:420px){.chips{margin-top:8px}.chip{padding:3px 9px;font-size:11.5px}}
 </style>
 
@@ -2242,8 +2272,6 @@ const TEENS=[
 ];
 const BETS=[
  ['Slot machines','$100 a session',()=>{if(!spend(100))return;const r=Math.random();const w=r<.01?R(20,50)*1000:r<.12?R(2,6)*100:r<.35?R(50,150):0;S.money+=w;L(w?`I won ${fmt(w)} on the slot machines.`:'The slot machines ate my $100.',w>100?'good':'')}],
- ['Roulette: bet $500 on red','Nearly a coin flip',()=>{if(!spend(500))return;if(C(18/37)){S.money+=1000;L('Red came up! I won $500 at roulette.','good')}else L('The ball landed on black. I lost $500.','bad')}],
- ['Roulette: $100 on a single number','35 to 1 odds',()=>{if(!spend(100))return;if(C(1/37)){S.money+=3600;L('My number hit! I won $3,500 at roulette!','good')}else L('My number did not come up. I lost $100.')}],
  ['Bet on a horse race','Pick a long shot or the favorite',()=>sheet('Horse race',a=>[['Lucky Biscuit (favorite)',2,.4],['Midnight Ledger',4,.22],['Copper Comet',8,.11],['Daisy Dynamo (long shot)',20,.045]].forEach(([h,odds,p])=>a.item(h,`Pays ${odds} to 1`,'$1,000',act('',()=>{if(!limit('horse',2,'The track is closed for the day.'))return;if(!spend(1000))return;if(C(p)){S.money+=1000*(odds+1);L(`${h.replace(/ \(.*\)/,'')} won! I collected ${fmt(1000*odds)}.`,'good')}else L(`I bet on ${h.replace(/ \(.*\)/,'')}. It finished out of the money.`,'bad')}),S.money<1000,['dice','purple'])))],
  ['Play in a poker game','$1,000 buy-in with friends of friends',()=>{if(!spend(1000))return;const sc=S.stats.smarts+R(-30,30);if(sc>80){const w=R(2,8)*1000;S.money+=w+1000;L(`I cleaned up at a poker game and won ${fmt(w)}.`,'good')}else if(sc>50){S.money+=1000;L('I broke even at poker.')}else L('I lost my $1,000 buy-in at poker.','bad')}],
  ['Bet on a sports match','$500 on your team',()=>{if(!spend(500))return;if(C(.47)){S.money+=950;L('My team won! I made $450.','good')}else L('My team lost and so did my $500.','bad')}],
@@ -2251,6 +2279,7 @@ const BETS=[
 ];
 function betMenu(){sheet('Casino & betting',api=>{api.sub(`You have ${fmt(S.money)}. The house always has the edge.`);
   api.item('Blackjack','Beat the dealer',null,casino,false,['dice','purple']);
+  api.item('Roulette','A full table: numbers, colors, dozens and columns',null,UX.roulette,false,['dice','red']);
   BAL.highStakes.shares.forEach(sh=>{const bet=Math.round(Math.max(0,S.money)*sh);api.item(`High-stakes table: bet ${Math.round(sh*100)}% of your cash`,'Double or nothing',bet>0?fmt(bet):null,act('',()=>{if(!limit('hs',3,'The high-stakes room has closed for the year.'))return;if(bet<1000){toast('You need at least $1,000 in cash.');return}if(C(BAL.highStakes.winChance)){S.money+=bet;L(`I won ${fmt(bet)} at the high-stakes table!`,'good')}else{S.money-=bet;L(`I lost ${fmt(bet)} at the high-stakes table.`,'bad')}}),S.money<1000,['dice','red'])});
   BETS.forEach(([n,d,fn])=>api.item(n,d,null,n.startsWith('Bet on a horse')?fn:act('',()=>{if(!limit('bet'+n,5,'The pit boss suggests you take a break.'))return;fn()}),false,['dice','purple']));});}
 /* ---------- the mysterious and the fantastic ---------- */
