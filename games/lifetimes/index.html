@@ -244,6 +244,50 @@ nav button.age.pulse{animation:agepulse .3s ease-out}
 @media (prefers-reduced-motion:reduce){.fl{animation:fadeonly 1.7s forwards}nav button.age.pulse{animation:none}}
 @keyframes fadeonly{0%{opacity:1}100%{opacity:0}}
 @media (max-width:420px){.w-nw b{font-size:21px}.w-cash b{font-size:15px}.wealth>div{padding:5px 10px}}
+
+/* ---------- phase 5: chips, goals, chart, blackjack ---------- */
+.tap{cursor:pointer}
+.tap:focus-visible{outline:3px solid var(--blue);outline-offset:3px;border-radius:14px}
+.chips{display:flex;gap:6px;margin-top:10px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.chips::-webkit-scrollbar{display:none}
+.chips:empty{display:none}
+.chip{flex:none;display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line);background:var(--panel2);border-radius:999px;padding:4px 10px;font-size:12px;font-weight:800;color:var(--muted);white-space:nowrap;line-height:1.3}
+.chip b{color:var(--ink)}
+.chip:hover{border-color:var(--blue)}
+.chip:active{transform:translateY(1px)}
+.chip.good b{color:var(--good)}.chip.bad b{color:var(--bad)}
+.chip.toggle{margin-left:auto;color:var(--ink)}
+.chip.toggle.on{background:var(--blue);border-color:var(--blue);color:var(--ink-btn)}
+.pips{display:inline-flex;gap:2px}
+.pips i{width:4px;height:10px;border-radius:2px;background:var(--line)}
+.pips i.f{background:var(--c-teal)}
+.goals{display:flex;flex-direction:column;gap:6px;margin-bottom:8px}
+.goal{display:flex;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:8px 12px;font-weight:700;font-size:14px}
+.goal i{flex:none;width:22px;height:22px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;font-style:normal;font-size:13px;font-weight:800;color:#fff}
+.goal span{flex:1;min-width:0}
+.goal small{flex:none;font-size:12px;font-weight:800;color:var(--muted)}
+.goal.done{border-color:color-mix(in srgb,var(--good) 35%,var(--line));background:color-mix(in srgb,var(--good) 9%,var(--panel))}
+.goal.done i{background:var(--good);border-color:var(--good)}
+.goal.done small{color:var(--good)}
+.goal.neg i{background:var(--bad);border-color:var(--bad)}
+.goal.trait{align-items:flex-start}
+.goal.trait span{font-weight:600;font-size:13px;color:var(--muted)}
+.goal.trait span b{color:var(--ink);font-size:14px}
+.nwc svg{display:block;width:100%;height:84px;stroke:none}
+.nwl{fill:none;stroke:var(--good);stroke-width:2.5;vector-effect:non-scaling-stroke}
+.nwa{fill:color-mix(in srgb,var(--good) 16%,transparent);stroke:none}
+.nwz{stroke:var(--muted);stroke-width:1;stroke-dasharray:3 4;vector-effect:non-scaling-stroke}
+.nwx{display:flex;justify-content:space-between;gap:8px;margin-top:5px;font-size:11.5px;font-weight:800;color:var(--muted)}
+.bj{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:12px 14px;margin-bottom:10px;box-shadow:0 2px 0 var(--line)}
+.bj small{display:block;font-size:11.5px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.bj-h{display:flex;flex-wrap:wrap;gap:6px;margin:5px 0 12px}
+.pc{min-width:42px;height:58px;padding:0 6px;border-radius:9px;border:1px solid var(--line);background:#fff;color:#18213D;display:grid;place-items:center;font-family:var(--display);font-weight:800;font-size:19px;box-shadow:0 2px 0 rgba(24,33,61,.18);animation:pop .25s ease-out backwards}
+.pc.red{color:#D93636}
+.pc.back{background:repeating-linear-gradient(45deg,var(--blue),var(--blue) 5px,var(--blue-d) 5px,var(--blue-d) 10px);color:#fff;border-color:var(--blue-d)}
+.bj-msg{margin:0;font-weight:800;font-size:15.5px;text-align:center}
+.bj-msg.up{color:var(--good)}.bj-msg.down{color:var(--bad)}
+@media (prefers-reduced-motion:reduce){.pc{animation:none}}
+@media (max-width:420px){.chips{margin-top:8px}.chip{padding:3px 9px;font-size:11.5px}}
 </style>
 
 
@@ -256,6 +300,7 @@ nav button.age.pulse{animation:agepulse .3s ease-out}
     </div>
     <div class="wealth"><div class="w-nw"><span>Net worth</span><b id="nw">$0</b></div><div class="w-cash"><span>Cash</span><b id="mn">$0</b></div></div>
     <div class="stats" id="stats"></div>
+    <div class="chips" id="chips"></div>
   </header>
   <div id="log" aria-live="polite"></div>
   <aside class="side" id="side"></aside>
@@ -278,6 +323,7 @@ nav button.age.pulse{animation:agepulse .3s ease-out}
 <script src="careers.js"></script>
 <script src="events.js"></script>
 <script src="legacy.js"></script>
+<script src="ux.js"></script>
 <script>
 "use strict";
 /* ---------- helpers ---------- */
@@ -524,7 +570,7 @@ function divorceCost(){return Math.round(BAL.events.divorceShare*(S.flags.prenup
 function breakUp(p,msg){if(p.rel==='Spouse'){const half=divorceCost();S.money-=half;msg+=half?` The divorce cost me ${fmt(half)}.`:''}p.rel='Ex';p.bond=clamp(p.bond-20);L(msg,'bad');st('happy',-12)}
 function bankrupt(){const seized=S.assets.reduce((a,x)=>a+x.value,0);S.assets=[];S.invest=0;S.port={};S.money=0;S.flags.bankrupt=S.age;st('happy',-15);L(`I declared bankruptcy. My debts were wiped out${seized?` and ${fmt(seized)} of my possessions were sold off`:''}.`,'bad')}
 function migrate(){S.acts=S.acts||{};S.flags=S.flags||{};S.seen=S.seen||{};S.look=S.look||{skin:R(0,5),hair:R(0,5),shirt:R(0,5)};
-  LEG.migrate();if(S.rep==null)S.rep=50;RULES.ensureBase();if(S.job)CAR.ensure(S.job);S.pets=S.pets||[];S.biz=S.biz||[];ECO.migrate();S.assets=S.assets||[];S.ill=S.ill||[];S.snaps=S.snaps||[];S.year0=S.year0||2026;S.edu.grad=S.edu.grad||[];ensureMarket()}
+  LEG.migrate();if(S.rep==null)S.rep=50;RULES.ensureBase();if(S.job)CAR.ensure(S.job);S.pets=S.pets||[];S.biz=S.biz||[];ECO.migrate();S.assets=S.assets||[];S.ill=S.ill||[];S.snaps=S.snaps||[];S.year0=S.year0||2026;S.edu.grad=S.edu.grad||[];ensureMarket();UX.migrate()}
 function L(t,cls){const y=S.log[S.log.length-1];y.lines.push({t,c:cls||''});LEG.observe(t,cls)}
 const st=(k,d)=>{S.stats[k]=clamp(S.stats[k]+RULES.gainScale(S.stats[k],d))};
 const first=()=>S.name.split(' ')[0];
@@ -610,6 +656,7 @@ const IC={
  globe:'<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/>',
  pill:'<path d="M10.5 3.5a5 5 0 0 1 7 7l-7 7a5 5 0 0 1-7-7z"/><path d="M7 7l7 7"/>',
  dice:'<rect x="4" y="4" width="16" height="16" rx="3"/><path d="M9 9h.01M15 15h.01M15 9h.01M9 15h.01M12 12h.01" stroke-width="3"/>',
+ bag:'<path d="M5 8h14l1 12H4z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/>',
  ticket:'<path d="M3 8V5h18v3a2 2 0 0 0 0 4v3H3v-3a2 2 0 0 0 0-4z" transform="translate(0 2)"/><path d="M14 7v12" stroke-dasharray="2 2"/>',
  gift:'<rect x="3" y="9" width="18" height="12" rx="1"/><path d="M3 13h18M12 9v12"/><path d="M12 9C10 5 6 5 6 7.5S12 9 12 9s6-.5 6-1.5S14 5 12 9"/>',
  chat:'<path d="M4 5h16v11H9l-5 4z"/><path d="M8 10h8"/>',
@@ -649,7 +696,7 @@ const ICON_RULES=[
  [/boat|yacht|marina|kayak|jet ski|water/i,'boat','teal'],
  [/plane|\bjet\b|aircraft|helicopter|flight/i,'plane','blue'],
  [/jewel|necklace|watch|tiara|earring|bracelet|luxury|designer|handbag|boutique/i,'gem','pink'],
- [/date|dating|propose|marry|wedding|partner|love|break up|divorce|back together|crush|match|flirt|texts|knee/i,'heart','pink'],
+ [/date|dating|propose|marry|wedding|partner|love|break up|divorce|back together|crush|match|flirt|texts|one knee/i,'heart','pink'],
  [/baby|child|adopt|grandchild|son\b|daughter|kid/i,'baby','orange'],
  [/gift|compliment|charity|donat|volunteer/i,'gift','pink'],
  [/time together|conversation|talk|argue|insult|ask for money|friend|call|loan|phone/i,'chat','blue'],
@@ -688,12 +735,12 @@ function render(){
   const last=S.log.length-1;let html='',quiet=[];
   const flush=()=>{if(!quiet.length)return;const a=quiet[0],b=quiet[quiet.length-1];
     html+=`<div class="yr quiet"><div class="yh"><b>${a===b?a:a+'–'+b}</b><small>${a===b?'A quiet year':'Quiet years'}</small></div></div>`;quiet=[]};
-  S.log.forEach((y,i)=>{const now=i===last;
-    if(!y.lines.length&&!now){quiet.push(y.age);return}
+  S.log.forEach((y,i)=>{const now=i===last,ls=UX.lines(y.lines,now);
+    if(!ls.length&&!now){quiet.push(y.age);return}
     flush();
     const sum=now?liveSummary():y.sum;
     html+=`<div class="yr${now&&S.alive?' now':''}"><div class="yh"><b>Age ${y.age}</b><small>${(S.year0||2026)+y.age}</small></div>${sum?summaryCard(sum,y,now):''}<div class="lines">${
-      y.lines.length?groupLines(y.lines).map(g=>{const [ic,col]=iconFor(FMT.plain(g.t))||['tag','blue'];return `<p class="${g.c}"><span class="li c-${col}">${svgI(ic)}</span><span class="lt">${esc(g.t)}</span>${g.n>1?`<span class="x">×${g.n}</span>`:''}</p>`}).join(''):'<p class="hint">Nothing yet this year. Try Activities, or press +1.</p>'}</div></div>`});
+      ls.length?groupLines(ls).map(g=>{const [ic,col]=iconFor(FMT.plain(g.t))||['tag','blue'];return `<p class="${g.c}"><span class="li c-${col}">${svgI(ic)}</span><span class="lt">${esc(g.t)}</span>${g.n>1?`<span class="x">×${g.n}</span>`:''}</p>`}).join(''):'<p class="hint">Nothing yet this year. Try Activities, or press +1.</p>'}</div></div>`});
   flush();
   $('#log').innerHTML=html;richify($('#log'),true);
   {const lg=$('#log');lg.style.scrollBehavior='auto';lg.scrollTop=1e9;lg.style.scrollBehavior=''}
@@ -702,7 +749,8 @@ function render(){
     ['Children',nk||'None'],['Pets',S.pets.filter(p=>p.alive).map(p=>p.name).join(', ')||'None'],['Possessions',S.assets.length||'None'],['Businesses',S.biz.length||'None'],
     ['Followers',fmtN(S.followers)],['Karma',S.karma+'%'],['Reputation',(S.rep==null?50:S.rep)+'%'],['Convictions',S.record],['Economy',{expansion:'Growing',boom:'Booming',recession:'Recession',crash:'Crash'}[ECO.phase()]],['Free time left',`${RULES.timeLeft()} of ${RULES.timeBudget()}`],['Traits',(S.traits||[]).map(t=>LEG.TRAITS[t].name).join(', ')||'—'],['Generation',S.gen]].concat(S.challenge?[['Challenge',`${(LEG.CHALLENGES.find(c=>c.id===S.challenge.id)||{name:'?'}).name}: ${S.challenge.status}`]]:[]).concat(S.flags.assisted?[['Achievements','Off for this life']]:[]);
   richify($('.hero'));
-  $('#side').innerHTML=`<h2>Life at a glance</h2><div class="glance">${rows.map(([k,v])=>`<div><span>${k}</span><span title="${esc(v)}">${esc(v)}</span></div>`).join('')}</div>`;
+  $('#chips').innerHTML=UX.chips();
+  $('#side').innerHTML=UX.side()+`<h2>Life at a glance</h2><div class="glance">${rows.map(([k,v])=>`<div><span>${k}</span><span title="${esc(v)}">${esc(v)}</span></div>`).join('')}</div>`;
   richify($('#side'));
   $('#tAge').disabled=!S.alive;
   $('#tAge').querySelector('b').textContent=S.alive?'+1':'RIP';
@@ -744,10 +792,12 @@ function floatChanges(a,b){const box=$('#floats');if(!box||!a)return;box.innerHT
   items.slice(0,5).forEach(([t,c],i)=>{const e=document.createElement('div');e.className='fl '+c;e.textContent=t;e.style.animationDelay=(i*0.12)+'s';box.appendChild(e)});
   setTimeout(()=>{box.innerHTML=''},2600)}
 function menuSheet(){sheet('Menu',api=>{
+  UX.menuTop(api);
   api.item('God Mode',LEG.sandbox()?'Sandbox: unlimited':!LEG.godUnlocked()?`Locked: ${LEG.achCount()}/${LEG.GOD_UNLOCK} achievements`:S.flags.godUsed?'Already used in this life':'Once per life',null,()=>{close();$('#bGod').click()},false,['star','gold']);
   api.item('Time Machine',LEG.rewindsLeft()===Infinity?'Sandbox: unlimited':`${LEG.rewindsLeft()} rewind${LEG.rewindsLeft()===1?'':'s'} left this life`,null,()=>{stack=[];timeMachine()},false,['clock','purple']);
   api.item('New life','Start over with a new character',null,()=>{stack=[];newLifeMenu()},false,['plus','green']);
   api.item('Challenge mode','Preset starts with a goal to beat',null,challengeMenu,false,['crown','gold']);
+  UX.menu(api);
   api.item('Achievements & settings',`${LEG.achCount()} of ${LEG.achTotal()} unlocked`,null,metaMenu,false,['star','gold']);
 });}
 
@@ -871,7 +921,7 @@ function ageUp(){
   milestones();
   deathCheck();
   if(S.alive){if(S.jail===0)rollEvents();else if(C(.25)&&(S.age-(S.seen.yard||-9)>=3)){S.seen.yard=S.age;prisonEvent()}}
-  if(S.alive)snap();
+  if(S.alive){UX.year();snap()}
   if(S.alive){const big=S.log[S.log.length-1].lines.filter(l=>MAJOR.test(FMT.plain(l.t)));if(big.length)popup('Big news',`<ul class="bignews">${big.slice(0,6).map(l=>`<li class="${l.c}">${esc(l.t)}</li>`).join('')}</ul>`,[['Continue',null]])}
   render();save();floatChanges(t0,yearSnap());
   if(!queue.length&&S.alive)close();
@@ -958,8 +1008,8 @@ function deathCheck(){
   }
 }
 function die(text){
-  S.alive=false;L(text,'bad');S.cause=text;LEG.onDeath();render();save();
-  queue=[];resume=null;afterQ=[];setTimeout(deathScreen,60);
+  S.alive=false;L(text,'bad');S.cause=text;LEG.onDeath();UX.onDeath();render();save();
+  queue=[];resume=null;afterQ=[];setTimeout(()=>{$('#floats').innerHTML='';deathScreen()},60);
 }
 function ribbon(){return LEG.ribbons()[0]}
 function deathScreen(){
@@ -971,7 +1021,7 @@ function deathScreen(){
     <div class="kv"><span>Final net worth</span><span>${fmt(F.nw)}</span><span>Peak net worth</span><span>${fmt(F.peak)}${F.peakAge!=null?` (age ${F.peakAge})`:''}</span><span>Last job</span><span>${esc(S.job?S.job.title:S.sp?spTitle():stage())}</span><span>Education</span><span>${esc(S.edu.degrees.slice(-1)[0]||'None')}</span><span>Children</span><span>${ks.length}</span><span>Karma</span><span>${S.karma}%</span><span>Traits</span><span>${esc((S.traits||[]).map(t=>LEG.TRAITS[t].name).join(', ')||'—')}</span><span>Generation</span><span>${S.gen}</span>${ch?`<span>Challenge</span><span>${esc(ch.name)}: ${S.challenge.status==='won'?'complete':'failed'}</span>`:''}</div>
     ${(S.newAch||[]).length?`<div class="sec">Achievements earned this life</div><div class="tags">${S.newAch.map(n=>`<span class="tag fame">${esc(n)}</span>`).join('')}</div>`:''}
     ${S.flags.assisted?'<p class="sub">This life used God Mode, max stats or sandbox mode, so it could not earn achievements.</p>':''}
-    <div class="sec">Life story</div><div class="auclog">${LEG.timeline(12).map(h=>`<p style="font-weight:600;color:var(--ink)"><b>Age ${h.a}:</b> ${esc(h.t)}</p>`).join('')||'<p>A quiet life.</p>'}</div>`);
+    ${UX.deathExtra()}<div class="sec">Life story</div><div class="auclog">${LEG.timeline(12).map(h=>`<p style="font-weight:600;color:var(--ink)"><b>Age ${h.a}:</b> ${esc(h.t)}</p>`).join('')||'<p>A quiet life.</p>'}</div>`);
     if(ks.length){api.sec('Continue as one of your children');ks.forEach(k=>api.item(esc(k.name),`${k.rel}, age ${k.age}${k.traits?` · ${k.traits.map(t=>LEG.TRAITS[t].name).join(', ')}`:''}`,null,()=>continueAs(k),false,['baby','orange']))}
     api.sec('Or');
     api.item('Rewind with the Time Machine',LEG.rewindsLeft()===Infinity?'Sandbox mode: unlimited':`${LEG.rewindsLeft()} rewind${LEG.rewindsLeft()===1?'':'s'} left this life`,null,()=>timeMachine(true),LEG.rewindsLeft()<=0);
@@ -1246,7 +1296,7 @@ function careerMenu(){sheet('Career',api=>{
     api.item('Have lunch with your ally',`${esc(j.ally.name)} helps you win promotions`,null,act('',()=>{if(!limit('lunch',2,'You have had enough work lunches this year.'))return;j.ally.bond=clamp(j.ally.bond+R(5,10));L(`I had lunch with ${j.ally.name} from work.`)}),false,['chat','blue']);
     api.item('Undermine your rival',`${esc(j.rival.name)} competes with you for promotions`,null,act('',()=>{if(!limit('underm',1,'Once a year is risky enough.'))return;kar(-5);if(C(.55)){j.rival.skill=clamp(j.rival.skill-R(5,10));L(`I quietly made ${j.rival.name} look bad at work.`)}else{j.perf=clamp(j.perf-10);CAR.rep(-6);j.rival.heat=clamp(j.rival.heat+20);L(`My attempt to undermine ${j.rival.name} was noticed. I look petty.`,'bad')}}),false,['mask','red']);
     api.item(j.insured?'Cancel professional insurance':'Buy professional insurance',`Costs ${Math.round(BAL.career.insurance.cost*100)}% of salary a year. Covers ${Math.round(BAL.career.insurance.covers*100)}% of lawsuits against you.`,null,act('',()=>{j.insured=!j.insured;L(j.insured?'I bought professional insurance.':'I cancelled my professional insurance.')}),false,['lock','teal']);
-    api.item('Quit job','',null,act('',()=>{L(`I quit my job as ${j.title}.`);S.job=null}));
+    api.item('Quit job','',null,UX.sure('Quit your job?',`You will walk away from your job as ${esc(j.title)} and ${fmt(j.salary)} a year.`,'Quit',()=>{L(`I quit my job as ${j.title}.`);S.job=null}));
     if(S.age>=55)api.item('Retire','Collect a pension',null,act('',()=>{L(`I retired from my job as ${j.title}.`,'good');S.job=null;S.flags.worked=true;st('happy',10)}));
   }
   if(S.part)api.item(`Quit part-time job (${S.part.title})`,'',null,act('',()=>{L(`I quit my part-time job as a ${S.part.title}.`);S.part=null}));
@@ -1254,7 +1304,7 @@ function careerMenu(){sheet('Career',api=>{
   if(e.school)api.html(`<p class="sub">Studying ${esc(e.school.major)} · ${e.school.left} yr${e.school.left>1?'s':''} left · grades ${e.grades}%</p>`);
   if(S.age>=5&&S.age<18&&!e.dropped){api.html(`<p class="sub">${stage()} · grades ${e.grades}%</p>`);
     api.item('Study harder','',null,act('',()=>{if(S.acts.study>=2){L('I tried to study more but my brain was fried.');return}S.acts.study=(S.acts.study||0)+1;st('smarts',R(2,4));st('happy',-2);e.grades=clamp(e.grades+R(4,9));L('I studied harder at school. Less time for fun.')}));
-    if(S.age>=16)api.item('Drop out of high school','',null,act('',()=>{e.dropped=true;L('I dropped out of high school.','bad')}));
+    if(S.age>=16)api.item('Drop out of high school','',null,UX.sure('Drop out of school?','Without a diploma most careers stay closed until you earn a GED.','Drop out',()=>{e.dropped=true;L('I dropped out of high school.','bad')}));
   }
   if(e.dropped&&e.level<1&&S.age>=16)api.item('Get a GED','Earn an equivalent diploma',fmt(500),act('',()=>{if(!spend(500))return;if(S.stats.smarts+R(0,40)>45){e.level=1;e.degrees.push('GED');L('I earned my GED.','good')}else L('I failed the GED exam.','bad')}));
   if(S.age>=18&&e.level>=1&&!e.school){api.item('University','Four-year bachelor\'s degree',null,uniMenu);api.item('Graduate school','Medicine, Law, MBA or PhD',null,gradMenu,e.level<2)}
@@ -1576,9 +1626,9 @@ function bizDetail(id){const get=()=>S.biz.find(x=>x.id===id);if(!get())return;s
   api.sec('Exit');
   api.sub(`The economy is ${ {expansion:'growing steadily',boom:'booming, so demand is strong',recession:'in recession, so demand is weak',crash:'in a crash, so demand is very weak'}[ECO.phase()]}.`);
   if(!x.public)api.item('Take it public (IPO)','Needs a valuation of $20M+. Sell shares on the stock market.',null,act('',()=>{const cash=Math.round(x.value*.3*x.own/100);S.money+=cash;ECO.capGains(cash-Math.round((x.basis||0)*.3*x.own/100),`shares of ${x.name}`);x.public=1;x.value=Math.round(x.value*1.25);x.own=Math.round(x.own*.7);S.fame=clamp(S.fame+5);L(`${x.name} went public! I cashed out ${fmt(cash)} and still own ${x.own}%.`,'good');st('happy',15)}),x.value<20e6,['chart','green']);
-  api.item('Sell my stake',`Offer: ${fmt(Math.round(x.value*0.95*x.own/100-x.loan))}${x.loan?' after repaying the loan':''}`,null,act('',()=>{const v=Math.round(x.value*0.95*x.own/100-x.loan);S.money+=v;ECO.capGains(Math.round(x.value*0.95*x.own/100-(x.basis||0)*x.own/100),x.name);S.biz=S.biz.filter(y=>y.id!==x.id);L(`I sold ${x.name} for ${fmt(v)}.`,'good')},'back'),false,['coin','green']);
-  if(x.loan>x.value*0.3*x.own/100)api.item('Declare the business bankrupt','Walk away. The loan is wiped, your reputation suffers.',null,act('',()=>{S.biz=S.biz.filter(y=>y.id!==x.id);CAR.rep(-12);st('happy',-10);L(`I let ${x.name} go bankrupt.`,'bad')},'back'),false,['alert','red']);
-  api.item('Close it down','Sell off equipment for about 30% of its value',null,act('',()=>{const v=Math.round(x.value*.3*x.own/100-x.loan);S.money+=v;S.biz=S.biz.filter(y=>y.id!==x.id);L(`I closed ${x.name} and liquidated it for ${fmt(v)}.`,v>=0?'':'bad')},'back'),false,['alert','red']);
+  api.item('Sell my stake',`Offer: ${fmt(Math.round(x.value*0.95*x.own/100-x.loan))}${x.loan?' after repaying the loan':''}`,null,UX.sure('Sell this business?',`You will sell your stake in ${esc(x.name)} for good and pay capital gains tax on any profit.`,'Sell',()=>{const v=Math.round(x.value*0.95*x.own/100-x.loan);S.money+=v;ECO.capGains(Math.round(x.value*0.95*x.own/100-(x.basis||0)*x.own/100),x.name);S.biz=S.biz.filter(y=>y.id!==x.id);L(`I sold ${x.name} for ${fmt(v)}.`,'good')},true),false,['coin','green']);
+  if(x.loan>x.value*0.3*x.own/100)api.item('Declare the business bankrupt','Walk away. The loan is wiped, your reputation suffers.',null,UX.sure('Declare bankruptcy?',`${esc(x.name)} will close for good and your reputation will suffer.`,'Declare bankruptcy',()=>{S.biz=S.biz.filter(y=>y.id!==x.id);CAR.rep(-12);st('happy',-10);L(`I let ${x.name} go bankrupt.`,'bad')},true),false,['alert','red']);
+  api.item('Close it down','Sell off equipment for about 30% of its value',null,UX.sure('Close this business?',`${esc(x.name)} will be shut down and sold for parts, at about 30% of its value.`,'Close it down',()=>{const v=Math.round(x.value*.3*x.own/100-x.loan);S.money+=v;S.biz=S.biz.filter(y=>y.id!==x.id);L(`I closed ${x.name} and liquidated it for ${fmt(v)}.`,v>=0?'':'bad')},true),false,['alert','red']);
 });}
 
 /* ---------- special careers: sports, acting, music, politics, dealing ---------- */
@@ -1819,13 +1869,13 @@ function assetDetail(id){sheet('Asset',api=>{
   if(a.type==='house'){
     if(a.rented)api.item('Manage tenant',a.tenant?`${a.tenant.name} · happiness ${a.tenant.mood}%${a.repair?' · repair needed':''}`:'Vacant: find a tenant',null,()=>tenantMenu(a.id),false,['users','blue']);
     api.item(a.rented?'Stop renting it out':'Rent it out',a.rented?'Move back in or leave it empty':'Earn about 4–7% of its value each year',null,act('',()=>{a.rented=!a.rented;if(a.rented&&!a.tenant)a.tenant=newTenant();L(a.rented?`I started renting out my ${lc(a.name)}.`:`I stopped renting out my ${lc(a.name)}.`)}));
-    api.item('Renovate',`Costs ${fmt(Math.round(a.value*0.06))} · adds about 10% value`,null,act('',()=>{const c=Math.round(a.value*0.06);S.money-=c;a.value=Math.round(a.value*(1+R(6,14)/100));L(`I renovated my ${lc(a.name)}.`,'good');st('happy',3)}));
+    api.item('Renovate',`Costs ${fmt(Math.round(a.value*0.06))} · adds about 10% value`,null,act('',()=>{const c=Math.round(a.value*0.06);if(!spend(c,'the renovation'))return;a.value=Math.round(a.value*(1+R(6,14)/100));L(`I renovated my ${lc(a.name)}.`,'good');st('happy',3)}));
     if(a.loan)api.item('Pay off mortgage',fmt(a.loan),null,act('',()=>{if(!spend(a.loan))return;L(`I paid off the ${fmt(a.loan)} mortgage on my ${lc(a.name)}.`,'good');a.loan=0}),S.money<a.loan);
     api.item('Throw a house party','$2,000',null,act('',()=>{if(!spend(2000))return;st('happy',6);alive().forEach(p=>{if(p.rel==='Friend')p.bond=clamp(p.bond+5)});L(`I threw a party at my ${lc(a.name)}.`,'good')}));
   }
   if(['car','moto','boat','air','classic'].includes(a.type))api.item(a.type==='air'?'Take it for a flight':a.type==='boat'?'Take it out on the water':'Go for a drive','',null,act('',()=>{st('happy',R(3,7));if(C(.04)){st('health',-R(10,25));L(`I had an accident in my ${lc(a.name)}.`,'bad');a.value=Math.round(a.value*0.7)}else L(`I took my ${lc(a.name)} out for the day.`,'good')}));
   if(['jewel','watch','bag','art','collect'].includes(a.type))api.item('Get it appraised','$500',null,act('',()=>{if(!spend(500))return;L(`An appraiser valued my ${lc(a.name)} at ${fmt(a.value)}.`)}));
-  api.item('Give it away','To a family member or charity',null,act('',()=>{S.assets=S.assets.filter(x=>x!==a);S.karma=clamp(S.karma+5);const p=alive().filter(x=>x.rel!=='Ex');if(p.length&&C(.6)){const q=P(p);q.bond=clamp(q.bond+20);q.money+=net;L(`I gave my ${lc(a.name)} to ${q.name}.`,'good')}else L(`I donated my ${lc(a.name)} to charity.`,'good')}));
+  api.item('Give it away','To a family member or charity',null,UX.sure('Give it away?',`You will give away your ${esc(lc(a.name))}, worth ${fmt(a.value)}, and get nothing back.`,'Give it away',()=>{S.assets=S.assets.filter(x=>x!==a);S.karma=clamp(S.karma+5);const p=alive().filter(x=>x.rel!=='Ex');if(p.length&&C(.6)){const q=P(p);q.bond=clamp(q.bond+20);q.money+=net;L(`I gave my ${lc(a.name)} to ${q.name}.`,'good')}else L(`I donated my ${lc(a.name)} to charity.`,'good')},true));
 });}
 function houseShop(){
   if(S.flags.housesAge!==S.age){S.flags.housesAge=S.age;S.flags.houses=HOMES.slice().sort(()=>Math.random()-.5).slice(0,9).sort((a,b)=>a[1]-b[1]).map(([n,b])=>({n,hood:remote(n)?'':P(HOODS),p:Math.round(b*(0.8+Math.random()*0.45)/1000)*1000,beds:n.includes('Studio')?0:R(1,n.includes('ansion')||n.includes('castle')||n.includes('estate')?9:4),c:R(40,100)}))}
@@ -1996,7 +2046,7 @@ function haveBaby(auto){
 }
 function personMenu(id){const p=S.people.find(x=>x.id===id);sheet(p.name,api=>{
   LEG.npc(p);const enemy=LEG.isEnemy(p);
-  api.html(`<p class="sub">${esc(p.rel)} · age ${p.age}${p.job?` · ${esc(p.job)}`:''} · ${esc(p.trait)}${p.traits?` · ${p.traits.map(t=>LEG.TRAITS[t].name).join(', ')}`:''}<br>${enemy?'Hostility':'Relationship'}</p><div class="mini" style="max-width:none;height:9px"><i style="width:${enemy?100-p.bond:p.bond}%;background:${enemy?'var(--bad)':'var(--jade)'}"></i></div>
+  api.html(`<p class="sub">${esc(p.rel)} · age ${p.age}${p.job?` · ${esc(p.job)}`:''} · ${esc(p.trait)}${p.traits?` · ${p.traits.map(t=>LEG.TRAITS[t].name).join(', ')}`:''}<br>${enemy?'Hostility':'Relationship'}</p><div class="mini" style="max-width:none;height:9px"><i style="width:${enemy?100-p.bond:p.bond}%;background:${enemy?'var(--bad)':'var(--good)'}"></i></div>
     <div class="kv" style="margin-top:10px"><span>Happiness</span><span>${p.st.happy}%</span><span>Health</span><span>${p.st.health}%</span><span>Smarts</span><span>${p.st.smarts}%</span><span>Looks</span><span>${p.st.looks}%</span>${p.income?`<span>Income</span><span>${fmt(p.income)}/yr</span>`:''}<span>Money</span><span>${fmt(p.money)}</span></div>`);
   if(enemy){api.sec('Deal with your enemy');
     api.item('Try to make peace','Swallow your pride',null,act('',()=>{if(!limit('peace'+p.id,1,'Give it a year before you try again.'))return;if(C(p.bond/100+0.25)){p.rel='Friend';p.bond=40;kar(4);L(`${p.name} and I made peace.`,'good')}else{p.bond=clamp(p.bond-8);L(`${p.name} rejected my attempt to make peace.`,'bad')}}),false,['heart','pink']);
@@ -2007,7 +2057,7 @@ function personMenu(id){const p=S.people.find(x=>x.id===id);sheet(p.name,api=>{
   api.item('Spend time together','',null,once('time',()=>{p.bond=clamp(p.bond+R(5,12));st('happy',3);L(`I spent time with my ${p.rel.toLowerCase()} ${p.name}.`)}));
   api.item('Have a conversation','',null,once('talk',()=>{p.bond=clamp(p.bond+R(1,7));L(`I had a long talk with ${p.name}.`)}));
   api.item('Give a compliment','',null,once('comp',()=>{p.bond=clamp(p.bond+R(2,6));L(`I complimented ${p.name}.`)}));
-  if(S.age>=6)api.item('Give a gift','$250',null,once('gift',()=>{S.money-=250;p.bond=clamp(p.bond+R(6,14));L(`I gave ${p.name} a gift.`)}));
+  if(S.age>=6)api.item('Give a gift','$250',null,once('gift',()=>{if(S.money<250){delete S.acts['gift'+p.id];toast(`A gift costs ${fmt(250)} and you have ${fmt(S.money)}.`);return}S.money-=250;p.bond=clamp(p.bond+R(6,14));L(`I gave ${p.name} a gift.`)}));
   if(['Mother','Father'].some(r=>p.rel.startsWith(r))||p.rel==='Spouse')api.item('Ask for money','',null,once('money',()=>{if(C(p.bond/150)&&p.money>500){const a=Math.min(p.money,R(1,20)*(S.age<18?10:250));p.money-=a;S.money+=a;L(`${p.name} gave me ${fmt(a)}.`,'good')}else{p.bond=clamp(p.bond-4);L(`${p.name} said no when I asked for money.`)}}));
   api.item('Argue','',null,once('argue',()=>{p.bond=clamp(p.bond-R(8,16));st('happy',-3);L(`I got into an argument with ${p.name}.`,'bad')}));
   api.item('Insult them','',null,once('insult',()=>{p.bond=clamp(p.bond-R(10,20));S.karma=clamp(S.karma-3);L(`I insulted ${p.name}.`,'bad')}));
@@ -2019,7 +2069,7 @@ function personMenu(id){const p=S.people.find(x=>x.id===id);sheet(p.name,api=>{
   if(['Partner','Spouse','Fiancé','Fiancée'].includes(p.rel)){
     if(S.age<55)api.item('Try for a baby','',null,once('baby',()=>{if(C(S.age<35?0.6:S.age<45?0.35:0.1))haveBaby();else L('We tried for a baby but no luck this year.')}));
     api.item('Adopt a child',fmt(30e3),null,act('',()=>{if(!spend(30e3))return;const g=C(.5)?'M':'F';const k=person(g==='M'?'Son':'Daughter',R(0,8),g,S.last);k.bond=80;LEG.initChild(k);S.people.push(k);L(`We adopted ${k.name}, age ${k.age}.`,'good');st('happy',12)}));
-    api.item(p.rel==='Spouse'?'Divorce':'Break up','',null,act('',()=>{if(p.rel==='Spouse'){const half=divorceCost();S.money-=half;L(`I divorced ${p.name}. The settlement cost me ${fmt(half)}.`,'bad')}else L(`I broke up with ${p.name}.`,'bad');p.rel='Ex';st('happy',-10)}));
+    api.item(p.rel==='Spouse'?'Divorce':'Break up','',null,UX.sure(p.rel==='Spouse'?'Divorce?':'Break up?',p.rel==='Spouse'?`Divorcing ${esc(fn1(p))} will cost you about ${fmt(divorceCost())}.`:`End things with ${esc(fn1(p))}?`,p.rel==='Spouse'?'Divorce':'Break up',()=>{if(p.rel==='Spouse'){const half=divorceCost();S.money-=half;L(`I divorced ${p.name}. The settlement cost me ${fmt(half)}.`,'bad')}else L(`I broke up with ${p.name}.`,'bad');p.rel='Ex';st('happy',-10)},true));
   }
   if(p.rel==='Ex')api.item('Try to get back together','',null,once('back',()=>{if(C(p.bond/200)&&!partner()){p.rel='Partner';L(`${p.name} and I got back together.`,'good')}else L(`${p.name} is not interested in getting back together.`)}));
 });}
@@ -2400,7 +2450,7 @@ function zooMenu(){if(!S.zoo){sheet('Open a zoo',api=>{api.sub('Land, enclosures
     api.item('Let a keeper go','',null,act('',()=>{z.keepers--;L(`I let a keeper go at ${z.name}.`)}),z.keepers<=1,['users','red']);
     api.item('Ticket prices',`Now: ${z.price}`,null,()=>sheet('Ticket prices',a=>[['cheap','Cheap ($15)'],['standard','Standard ($25)'],['premium','Premium ($40)']].forEach(([k,l])=>a.item(l+(z.price===k?' <span class="pill">Current</span>':''),'',null,act('',()=>{z.price=k;L(`I set ${z.name}'s ticket prices to ${k}.`)},'back'),false,['tag','gold']))),false,['tag','gold']);
     api.item('Run a school education program','Kids learn, reviews improve',fmt(20e3),act('',()=>{if(!limit('edu',1,'The program is already running this year.'))return;if(!spend(20e3))return;z.rating=clamp(z.rating+5);kar(3);L(`${z.name} launched a school education program.`,'good')}),S.money<20e3,['cap','blue']);
-    api.item('Sell the zoo',`About ${fmt(zooValue(z))}`,null,act('',()=>{S.money+=zooValue(z);L(`I sold ${z.name} for ${fmt(zooValue(z))}.`,'good');S.zoo=null},'back'),false,['coin','green']);
+    api.item('Sell the zoo',`About ${fmt(zooValue(z))}`,null,UX.sure('Sell the zoo?',`You will sell ${esc(z.name)} and every animal in it.`,'Sell',()=>{S.money+=zooValue(z);L(`I sold ${z.name} for ${fmt(zooValue(z))}.`,'good');S.zoo=null},true),false,['coin','green']);
   });}
 const zooValue=z=>Math.round(1.6e6+Object.entries(z.animals).reduce((a,[sp,c])=>a+SPECIES.find(x=>x[0]===sp)[1]*c*0.8,0)+Object.keys(z.ups).reduce((a,u)=>a+ZOO_UPS.find(x=>x[0]===u)[1]*0.6,0));
 function zooYear(){const z=S.zoo;if(!z)return;const n=zooCount(z),need=Math.max(1,Math.ceil(n/6));
@@ -2556,7 +2606,7 @@ function actMenu(){sheet('Activities',api=>{
   if(S.jail>0){api.sub('Prison limits what you can do.');
     api.item('Work out in the yard','',null,act('',()=>{st('health',R(2,5));L('I worked out in the prison yard.')}));
     api.item('Read in the library','',null,act('',()=>{st('smarts',R(2,5));L('I read in the prison library.')}));
-    api.item('Attempt an escape','',null,act('',()=>{if(!limit('escape',1,'Guards are watching you closely. Wait until next year.'))return;if(C(.18)){S.jail=0;L('I escaped from prison!','good')}else{S.jail+=R(1,4);L('My escape attempt failed and my sentence was extended.','bad')}}));return}
+    api.item('Attempt an escape','',null,act('',()=>{if(!limit('escape',1,'Guards are watching you closely. Wait until next year.'))return;if(C(.18)){S.jail=0;S.flags.fugitive=true;L('I escaped from prison!','good')}else{S.jail+=R(1,4);L('My escape attempt failed and my sentence was extended.','bad')}}));return}
   moreActs(api);
   api.sec('Mind & body');
   const train=(k,label,stat,dl,msg)=>api.item(label,'',null,act('',()=>{if(!limit(k,2,'You are worn out. Try again next year.'))return;const gain=R(dl[0],dl[1]);stat.forEach(s=>st(s,gain));if(k==='med'&&S.job)S.job.stress=clamp((S.job.stress||0)-8);if(k==='lib')st('happy',-1);L(msg)}));
@@ -2583,15 +2633,7 @@ function doctor(){
   if(!S.ill.length){sheet('Doctor',api=>api.item('Get a check-up','$150',null,act('',()=>{if(!spend(150))return;st('health',R(1,4));L('I went for a check-up. The doctor says I am doing fine.')})));return}
   sheet('Doctor',api=>S.ill.forEach(i=>api.item(`Treat ${i.n}`,`Success chance about ${Math.round(i.cure*100)}%`,fmt(Math.max(i.cost,ECO.amt('medicalBill'))),act('',()=>{if(!spend(Math.max(i.cost,ECO.amt('medicalBill'))))return;if(C(i.cure)){S.ill=S.ill.filter(x=>x!==i);st('health',Math.round(i.h*0.7));L(`I was cured of ${i.n}.`,'good')}else L(`Treatment for ${i.n} did not work this time.`,'bad')}))));
 }
-function casino(){sheet('Blackjack',api=>{api.sub(`You have ${fmt(S.money)}. The house wins a little more often than you do.`);
-  [100,1000,10000,100000].forEach(b=>api.item(`Bet ${fmt(b)}`,'',null,()=>{
-    if(S.money<b){note('Not enough cash',`You need ${fmt(b)} to place that bet.`);return}
-    const you=R(15,22),deal=R(16,23);let res;
-    if(you===21&&C(.4)){S.money+=Math.round(b*1.5);res=`Blackjack! You won ${fmt(b*1.5)}.`}
-    else if(deal>21||you>deal){S.money+=b;res=`You had ${you}, dealer had ${deal}. You won ${fmt(b)}.`}
-    else if(you===deal)res=`Push at ${you}. Bet returned.`;
-    else{S.money-=b;res=`You had ${you}, dealer had ${deal}. You lost ${fmt(b)}.`}
-    L('Casino: '+res.replace('You','I').replace('You','I'));note('Blackjack',res);},S.money<b))});}
+function casino(){UX.blackjack()}
 function social(){sheet('Social media',api=>{
   api.html(`<div class="kv"><span>Followers</span><span>${fmtN(S.followers)}</span><span>Fame</span><span>${S.fame}%</span></div>`);
   [['Post a selfie','looks'],['Post a hot take','smarts'],['Post a funny video','happy'],['Go live','fame']].forEach(([t,k])=>api.item(t,'',null,act('',()=>{
@@ -2608,7 +2650,7 @@ function royalMenu(){sheet('Royal life',api=>{const r=S.royal;
   api.item('Go on a state visit','',null,act('',()=>{if(!limit('visit',1,'One state visit a year.'))return;r.pop=clamp(r.pop+R(1,5));st('happy',4);L(`I made a state visit to ${P(COUNTRIES)}.`)}));
   if(r.monarch){api.item('Raise taxes','More income, less approval',null,act('',()=>{if(!limit('tax',1,'You already raised taxes this year.'))return;S.money+=3e6;r.pop=clamp(r.pop-12);L('I raised taxes across the kingdom.','bad')}));
     api.item('Pardon prisoners','',null,act('',()=>{if(!limit('pardon',1,'You already issued pardons this year.'))return;r.pop=clamp(r.pop+6);S.karma=clamp(S.karma+4);L('I pardoned a group of prisoners.','good')}));
-    api.item('Abdicate the throne','',null,act('',()=>{r.monarch=false;r.title='Former '+(he()?'King':'Queen');L('I abdicated the throne.','bad')}))}
+    api.item('Abdicate the throne','',null,UX.sure('Abdicate?','You will give up the crown and the income that comes with it. There is no way back.','Abdicate',()=>{r.monarch=false;r.title='Former '+(he()?'King':'Queen');L('I abdicated the throne.','bad')}))}
 });}
 function arrest(text,yrs){S.record++;S.jail=yrs;if(S.sp&&S.sp.kind!=='dealer')spEnd(`My ${lc(spTitle())} career ended with my arrest.`,'bad');else if(S.sp)S.sp=null;if(S.job){L(`I lost my job as ${S.job.title}.`,'bad');S.job=null}L(text,'bad');L(`I was sentenced to ${yrs} year${yrs>1?'s':''} in prison.`,'bad');st('happy',-20)}
 function crimeMenu(){sheet('Crime',api=>{
@@ -2708,7 +2750,7 @@ function metaMenu(){sheet('Achievements & settings',api=>{const m=LEG.store(),n=
 });}
 
 /* ---------- wire up ---------- */
-$('#tAge').onclick=ageUp;
+$('#tAge').onclick=()=>{if(UX.swallow())return;ageUp()};
 $('#tJob').onclick=()=>{stack=[];careerMenu()};
 $('#tAssets').onclick=()=>{stack=[];assetsMenu()};
 $('#tPeople').onclick=()=>{stack=[];peopleMenu()};
@@ -2720,5 +2762,5 @@ $('#bGod').onclick=()=>{stack=[];if(!S.alive){note('God Mode','This life has end
 $('#bMenu').onclick=()=>{stack=[];menuSheet()};
 document.addEventListener('keydown',e=>{if(e.key===' '&&ov.hidden&&document.activeElement===document.body&&S&&S.alive){e.preventDefault();ageUp()}});
 
-if(!load())newLife();else{render();if(!S.alive)deathScreen()}
+if(!load()){newLife();UX.welcome()}else{render();if(!S.alive)deathScreen()}
 </script>

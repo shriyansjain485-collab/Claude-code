@@ -43,7 +43,7 @@ const ECO = (() => {
   // Add taxable income. Tax is settled once a year by settleTax().
   function earn(x) { S.money += x; S.taxable = (S.taxable || 0) + Math.max(0, x); return x; }
   function settleTax() {
-    const g = S.taxable || 0; S.taxable = 0; if (g <= 0) return 0;
+    const g = S.taxable || 0; S.taxable = 0; S.lastIncome = Math.max(0, g); if (g <= 0) return 0;
     const t = incomeTax(g); S.money -= t; S.yearTax = (S.yearTax || 0) + t;
     if (t > 0) L(`I paid ${fmt(t)} in income tax on ${fmt(g)} of income (${Math.round(t / g * 100)}%).`);
     return t;
@@ -93,14 +93,20 @@ const ECO = (() => {
   const bizCycle = () => 1 + BAL.cycle[phase()].ret * BAL.assetClass.business.beta;
 
   /* ---------- cost of living ---------- */
+  // Yearly household spending. Mostly follows what you earn (last year's take-home pay), plus a lifestyle
+  // that grows with spendable wealth. The home you live in does not count as spendable wealth.
   function living() {
     if (S.age < 18 || S.jail > 0) return { total: 0 };
-    const L0 = BAL.living, nw = Math.max(0, netWorth());
+    const L0 = BAL.living;
     const home = S.assets.some(a => a.type === 'house' && !a.rented);
+    const homeValue = S.assets.filter(a => a.type === 'house' && !a.rented).reduce((t, a) => t + a.value, 0);
+    const spendable = Math.max(0, netWorth() - homeValue);
     const atHome = !home && S.age < 26 && !partner() && alive().some(p => p.rel.startsWith('Mother') || p.rel.startsWith('Father'));
-    let household = atHome ? L0.withParents : table(L0.byNetWorth, nw) * (home ? 1 - L0.ownHomeDiscount : 1);
+    const gross = Math.max(S.lastIncome || 0, S.job ? S.job.salary : 0), net = gross - incomeTax(gross);
+    const lifestyle = L0.incomeShare * Math.max(0, net - L0.essentials) + table(L0.byWealth, spendable);
+    let household = atHome ? L0.withParents : L0.essentials * (home ? 1 - L0.ownHomeDiscount : 1) + lifestyle;
     const kidsN = S.people.filter(p => p.alive && ['Son', 'Daughter'].includes(p.rel) && p.age < 18).length;
-    const kidsCost = kidsN * (L0.perChild + table(L0.byNetWorth, nw) * L0.perChildLifestyle);
+    const kidsCost = kidsN * (L0.perChild + lifestyle * L0.perChildLifestyle);
     const pets = S.pets.filter(p => p.alive).length * L0.perPet;
     const debt = S.money < 0 ? -S.money * L0.debtInterest : 0;
     const tm = typeof LEG !== 'undefined' ? (LEG.has('thrifty') ? 0.88 : LEG.has('spendthrift') ? 1.15 : 1) : 1;

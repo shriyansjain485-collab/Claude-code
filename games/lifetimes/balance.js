@@ -45,14 +45,17 @@ window.BAL = {
 
   /* ---------- the cost of living ---------- */
   living: {
-    // Yearly household spending by net worth. Values in between are interpolated.
-    byNetWorth: [[0, 14e3], [100e3, 22e3], [1e6, 60e3], [10e6, 250e3], [100e6, 1.2e6], [1e9, 7e6], [10e9, 35e6], [100e9, 150e6]],
-    ownHomeDiscount: 0.35,   // owning a home cuts household costs by this much (you still pay upkeep and property tax)
+    // Yearly household spending = essentials (rent, food, bills) + a share of take-home pay above that
+    // + a lifestyle that grows with spendable wealth (everything except the home you live in).
+    essentials: 9e3,
+    incomeShare: 0.45,       // share of take-home pay above essentials that goes on lifestyle; the rest is saved
+    byWealth: [[0, 0], [250e3, 0], [1e6, 15e3], [10e6, 150e3], [100e6, 900e3], [1e9, 5e6], [10e9, 25e6], [100e9, 100e6]],
+    ownHomeDiscount: 0.35,   // owning the home you live in cuts essentials by this much (no rent)
     withParents: 2e3,        // under 26, single, no home: live with your parents
-    perChild: 9e3,           // per child under 18, grows with your lifestyle
-    perChildLifestyle: 0.02, // extra per child as a share of your household spending
+    perChild: 5e3,           // per child under 18...
+    perChildLifestyle: 0.05, // ...plus this share of your lifestyle spending
     perPet: 500,
-    debtInterest: 0.08,      // yearly interest on negative cash
+    debtInterest: 0.06,      // yearly interest on negative cash
   },
   // Wealthy parents help their children at these ages: a share of the parent's money, up to a cap (gift tax applies).
   familyGifts: { ages: [18, 25], minParentWealth: 5e6, share: 0.05, cap: 5e6 },

@@ -38,15 +38,18 @@ const LEG = (() => {
     hotheaded: { name: 'Hot-headed', d: 'Quick to anger. Makes enemies more easily.', good: 0 },
   };
   const TRAIT_KEYS = Object.keys(TRAITS);
+  // Opposite traits never appear together.
+  const CLASH = [['thrifty', 'spendthrift'], ['ambitious', 'lazy'], ['resilient', 'fragile']];
+  const ok2 = (out, k) => !out.includes(k) && !CLASH.some(([a, b]) => (k === a && out.includes(b)) || (k === b && out.includes(a)));
   const has = k => !!(S && S.traits && S.traits.includes(k));
   function randomTraits(n) {
-    const out = []; while (out.length < n) { const k = P(TRAIT_KEYS); if (!out.includes(k)) out.push(k); } return out;
+    const out = []; while (out.length < n) { const k = P(TRAIT_KEYS); if (ok2(out, k)) out.push(k); } return out;
   }
   // A child keeps one trait from the parent most of the time, plus one of their own.
   function inheritTraits(parentTraits) {
     const out = [];
     if (parentTraits && parentTraits.length && chance(0.65)) out.push(P(parentTraits));
-    while (out.length < 2) { const k = P(TRAIT_KEYS); if (!out.includes(k)) out.push(k); }
+    while (out.length < 2) { const k = P(TRAIT_KEYS); if (ok2(out, k)) out.push(k); }
     return out;
   }
   function applyTraitBases() {
