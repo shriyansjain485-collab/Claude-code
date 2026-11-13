@@ -129,18 +129,44 @@ const ECO = (() => {
       else { const v = amt('burglary', w + S.assets.reduce((a, x) => a + x.value, 0)); S.money -= v; L(`Burglars broke into my home and took ${fmt(v)} worth of valuables.`, 'bad'); }
     }
     if (chance(H.fraud * luck)) { const v = amt('fraud', w); S.money -= v; L(`An advisor I trusted quietly embezzled ${fmt(v)} from my accounts.`, 'bad'); }
-    const pSue = luck * Math.min(0.25, H.lawsuitBase + Math.max(0, netWorth()) / 1e9 * H.lawsuitPerBillion + S.fame * H.lawsuitPerFame);
-    if (chance(pSue)) {
-      const v = amt('lawsuit', w);
-      popup('Lawsuit', `Someone is suing you for ${fmt(v)}. ${P(['They say you caused a car accident.', 'A former employee claims unfair dismissal.', 'A neighbor says your renovation damaged their home.', 'A business partner claims you broke a contract.', 'A stranger claims you defamed them online.'])}`, [
-        [`Settle for ${fmt(Math.round(v * 0.5))}`, () => { S.money -= Math.round(v * 0.5); L(`I settled a lawsuit for ${fmt(Math.round(v * 0.5))}.`, 'bad'); }],
-        [`Fight it in court (legal fees ${fmt(Math.round(v * 0.1))})`, () => {
-          S.money -= Math.round(v * 0.1);
-          if (chance(0.55)) L('I fought a lawsuit in court and won.', 'good');
-          else { S.money -= v; L(`I lost a lawsuit and had to pay ${fmt(v)}.`, 'bad'); }
-        }],
-      ]);
-    }
+    lawsuit(w, luck);
+  }
+
+  /* ---------- lawsuits: only for a real reason in the player's life ---------- */
+  // Each reason: [weight, claim, text, how strong their case is (0-1)].
+  function suitReasons(w) {
+    const out = [], H = BAL.hazards, cap = (v, hi) => Math.round(lim(v, 5e3, hi));
+    const car = S.assets.find(a => a.type === 'car' || a.type === 'classic');
+    if (car && S.age >= 18) out.push([0.5, cap(w * 0.01, 2e6), `The other driver in a crash with your ${car.name.toLowerCase()} says it was your fault and wants damages.`, 0.45]);
+    S.biz.forEach(b => {
+      if (b.staff >= 3 && b.morale < 40) out.push([1, cap(b.value * 0.03, 50e6), `A former employee of ${b.name} claims unfair dismissal. Staff morale there is low (${Math.round(b.morale)}%).`, 0.55]);
+      if (b.rating < 45) out.push([1, cap(b.value * 0.05, 80e6), `A customer says a poor product or service from ${b.name} harmed them. Its rating is only ${Math.round(b.rating)}%.`, 0.55]);
+    });
+    S.assets.filter(a => a.rented && a.tenant && (a.repair || a.tenant.mood < 35)).forEach(a => out.push([1, cap(a.value * 0.05, 5e6), `Your tenant ${a.tenant.name} is suing over the state of your ${a.name.toLowerCase()}${a.repair ? ': a repair has been left undone' : ''}.`, 0.6]));
+    if (typeof LEG !== 'undefined') S.people.filter(LEG.isEnemy).forEach(e => out.push([1.5, cap(w * 0.02, 200e6), `${e.name}, who has had it in for you, has filed a lawsuit claiming you cheated them.`, 0.3]));
+    if (S.fame >= H.lawsuitFame) out.push([0.5, cap(w * 0.02, 100e6), 'Someone you criticised in public says your words ruined their reputation and is suing for defamation.', 0.35]);
+    if (S.karma != null && S.karma < 25 && S.age >= 18) out.push([1, cap(w * 0.03, 200e6), 'Someone you wronged in the past has found a lawyer and is suing you.', 0.6]);
+    return out;
+  }
+  function lawsuit(w, luck) {
+    const H = BAL.hazards; S.flags = S.flags || {};
+    if (S.flags.lastSued != null && S.age - S.flags.lastSued < H.lawsuitCooldown) return;
+    const rs = suitReasons(w); if (!rs.length) return;
+    const total = rs.reduce((a, r) => a + r[0], 0);
+    const wealth = 1 + Math.max(0, Math.log10(Math.max(1, netWorth()) / 1e6)) * H.lawsuitWealthWeight;
+    if (!chance(luck * Math.min(H.lawsuitCap, total * H.lawsuitPerReason * wealth))) return;
+    let r = Math.random() * total, pick = rs[0];
+    for (const x of rs) { if ((r -= x[0]) < 0) { pick = x; break; } }
+    const [, v, why, strength] = pick; S.flags.lastSued = S.age;
+    const win = lim(1 - strength + ((S.karma == null ? 50 : S.karma) - 50) / 250, 0.15, 0.85);
+    popup('Lawsuit', `${why} They want ${fmt(v)}. Your lawyer puts your chances in court at about ${Math.round(win * 100)}%.`, [
+      [`Settle for ${fmt(Math.round(v * 0.5))}`, () => { S.money -= Math.round(v * 0.5); L(`I settled a lawsuit for ${fmt(Math.round(v * 0.5))}.`, 'bad'); }],
+      [`Fight it in court (legal fees ${fmt(Math.round(v * 0.1))})`, () => {
+        S.money -= Math.round(v * 0.1);
+        if (chance(win)) L('I fought a lawsuit in court and won.', 'good');
+        else { S.money -= v; L(`I lost a lawsuit and had to pay ${fmt(v)}.`, 'bad'); }
+      }],
+    ]);
   }
 
   function migrate() {
@@ -152,5 +178,5 @@ const ECO = (() => {
   }
 
   return { table, liquid, amt, taxMult, incomeTax, earn, settleTax, capGains, inheritNet, propertyTax, corporateRate,
-    phase, cycleYear, badTimes, ret, gain, bizCycle, living, growBiz, costRate, portfolioOverhead, hazards, migrate, gauss };
+    phase, cycleYear, badTimes, ret, gain, bizCycle, living, growBiz, costRate, portfolioOverhead, hazards, suitReasons, migrate, gauss };
 })();

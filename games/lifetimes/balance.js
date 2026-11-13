@@ -110,7 +110,7 @@ window.BAL = {
     divorceShare:  0.4,          // share of liquid wealth and property a spouse takes
   },
   // Yearly chance of the wealth hazards above. Rises with wealth and fame.
-  hazards: { burglary: 0.04, lawsuitBase: 0.01, lawsuitPerBillion: 0.04, lawsuitPerFame: 0.0004, fraud: 0.015, minWealth: 250e3 },
+  hazards: { burglary: 0.04, lawsuitPerReason: 0.012, lawsuitWealthWeight: 0.3, lawsuitCap: 0.06, lawsuitCooldown: 8, lawsuitFame: 50, fraud: 0.015, minWealth: 250e3 },
 
   /* ---------- careers (regular jobs, by field) ---------- */
   // peak = ages when performance holds up best, retire = mandatory retirement age,

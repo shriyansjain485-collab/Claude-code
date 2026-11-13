@@ -110,13 +110,14 @@ const CAR = (() => {
         j.perf = clamp(j.perf - 8); L(`I was injured on the job. My share of the medical bills was ${fmt(Math.round(bill * 0.3))}.`, 'bad'); return false;
       }
       if (type === 'scandal' && chance(K.scandal.p + S.fame * K.scandal.perFame)) { scandal(() => lose(`I lost my job as ${j.title} over the scandal.`)); return false; }
-      if (type === 'lawsuit' && chance(K.lawsuit.p)) {
+      if (type === 'lawsuit' && !(S.flags && S.flags.lastSued != null && S.age - S.flags.lastSued < BAL.hazards.lawsuitCooldown) && chance(K.lawsuit.p * (j.perf < 40 ? 2 : j.perf > 70 ? 0.3 : 1))) {
+        S.flags = S.flags || {}; S.flags.lastSued = S.age;
         const claim = Math.round(sal * (K.lawsuit.minSalary + Math.random() * (K.lawsuit.maxSalary - K.lawsuit.minSalary)));
         const ins = j.insured ? BAL.career.insurance.covers : 0;
-        const what = P(['A client says my advice cost them dearly.', 'Someone I served claims I was negligent.', 'A complaint has turned into a formal claim against me.']);
+        const what = j.perf < 40 ? `My work as ${j.title} has been slipping (performance ${Math.round(j.perf)}%), and a client says a mistake of mine cost them dearly.` : `A client claims I was negligent in my work as ${j.title}.`;
         popup('Professional lawsuit', `${what} They want ${fmt(claim)}.${ins ? ` Your professional insurance covers ${Math.round(ins * 100)}%.` : ' You have no professional insurance.'}`, [
           [`Settle (${fmt(Math.round(claim * 0.6 * (1 - ins)))})`, () => { S.money -= Math.round(claim * 0.6 * (1 - ins)); rep(-3); L(`I settled a professional lawsuit for ${fmt(Math.round(claim * 0.6 * (1 - ins)))}.`, 'bad'); }],
-          ['Fight it', () => { if (chance(.5)) { rep(3); L('I fought a professional lawsuit and was cleared.', 'good'); } else { S.money -= Math.round(claim * (1 - ins)); rep(-10); j.perf = clamp(j.perf - 10); L(`I lost a professional lawsuit and paid ${fmt(Math.round(claim * (1 - ins)))}.`, 'bad'); } }],
+          ['Fight it', () => { if (chance(j.perf < 40 ? 0.35 : 0.6)) { rep(3); L('I fought a professional lawsuit and was cleared.', 'good'); } else { S.money -= Math.round(claim * (1 - ins)); rep(-10); j.perf = clamp(j.perf - 10); L(`I lost a professional lawsuit and paid ${fmt(Math.round(claim * (1 - ins)))}.`, 'bad'); } }],
         ]);
         return false;
       }
