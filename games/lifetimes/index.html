@@ -298,8 +298,8 @@ nav button.age.pulse{animation:agepulse .3s ease-out}
 .rl-hist{display:flex;align-items:center;flex-wrap:wrap;gap:4px;margin:10px 2px 0}.rl-hist small{width:100%;margin-bottom:2px}
 .rl-h{min-width:26px;height:26px;padding:0 4px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:800;color:#fff}
 .rl-h.r{background:#C8312F}.rl-h.k{background:#1B1F2B}.rl-h.z{background:#12955A}
-.rl-chips{display:flex;gap:8px;justify-content:center;margin:12px 0}
-.rl-chipbtn{width:52px;height:52px;border-radius:50%;border:4px dashed rgba(255,255,255,.85);background:#2C64D8;color:#fff;font:inherit;font-weight:800;font-size:12.5px;cursor:pointer;box-shadow:0 0 0 2px #2C64D8,0 3px 0 rgba(0,0,0,.25)}
+.rl-chips{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin:12px 0}
+.rl-chipbtn{width:48px;height:48px;border-radius:50%;border:4px dashed rgba(255,255,255,.85);background:#2C64D8;color:#fff;font:inherit;font-weight:800;font-size:12.5px;cursor:pointer;box-shadow:0 0 0 2px #2C64D8,0 3px 0 rgba(0,0,0,.25)}
 .rl-chipbtn:nth-child(2){background:#C8312F;box-shadow:0 0 0 2px #C8312F,0 3px 0 rgba(0,0,0,.25)}
 .rl-chipbtn:nth-child(3){background:#12955A;box-shadow:0 0 0 2px #12955A,0 3px 0 rgba(0,0,0,.25)}
 .rl-chipbtn:nth-child(4){background:#1B1F2B;box-shadow:0 0 0 2px #1B1F2B,0 3px 0 rgba(0,0,0,.25)}
@@ -317,6 +317,16 @@ nav button.age.pulse{animation:agepulse .3s ease-out}
 .rl-dia{width:20px;height:20px;transform:rotate(45deg);border:1.5px solid #fff;display:block}.rl-dia.r{background:#C8312F}.rl-dia.k{background:#1B1F2B}
 .rl-chip{position:absolute;top:-7px;right:-7px;min-width:24px;height:24px;padding:0 4px;border-radius:12px;background:#FFD54A;color:#3A2A00;border:2px dashed #fff;font-family:var(--body,inherit);font-size:10px;font-weight:800;display:grid;place-items:center;z-index:2;box-shadow:0 2px 3px rgba(0,0,0,.35);pointer-events:none}
 @media (prefers-reduced-motion:reduce){.rl-ball.spin{animation:none}}
+.amt-pick{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:16px 16px 12px;margin-bottom:10px;box-shadow:0 2px 0 var(--line)}
+.amt-big{font-family:var(--display);font-weight:800;font-size:30px;text-align:center;line-height:1.1;word-break:break-all}
+.amt-note{text-align:center;font-size:13px;font-weight:700;color:var(--muted);margin:4px 0 12px;min-height:1.3em}
+.amt-r{width:100%;height:34px;accent-color:var(--blue);cursor:pointer;margin:0}
+.amt-scale{display:flex;justify-content:space-between;font-size:11.5px;font-weight:800;color:var(--muted);margin:0 2px 12px}
+.amt-row{display:flex;gap:5px;align-items:center}
+.amt-t{flex:1 1 0;width:0;min-width:70px;border:2px solid var(--line);background:var(--panel2);border-radius:14px;padding:9px 12px;font:inherit;font-weight:800;color:var(--ink)}
+.amt-t:focus{border-color:var(--blue);outline:none}
+.amt-row .chip{padding:8px 9px;font-size:12.5px;flex:none}
+.rl-chipbtn.custom{background:#D9B45A;box-shadow:0 0 0 2px #D9B45A,0 3px 0 rgba(0,0,0,.25);color:#3A2A00;border-color:rgba(255,255,255,.9)}
 .mk-spark{margin:6px 0 10px}.mk-spark.down .nwl{stroke:var(--bad)}.mk-spark.down .nwa{fill:color-mix(in srgb,var(--bad) 14%,transparent)}
 .mk-alloc{display:flex;flex-direction:column;gap:7px;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:10px 12px;margin-bottom:8px}
 .mk-arow{display:grid;grid-template-columns:84px 1fr 40px;align-items:center;gap:10px;font-size:13px;font-weight:700}
@@ -1880,7 +1890,7 @@ function assetsMenu(){sheet('Assets',api=>{
   api.sec('Investing');
   api.item('Bonds, gold & startups','Interest, safe havens and angel investing',null,investMenu,false,['chart','green']);
   api.item('Stock & crypto market',`${MKT.LIST.length} stocks, funds and coins · news, dividends, orders`,null,marketMenu);
-  api.item('Index fund',`Balance ${fmt(S.invest)}`,null,()=>sheet('Index fund',a=>{[1e3,1e4,1e5,1e6].forEach(v=>a.item(`Invest ${fmt(v)}`,'',null,act('',()=>{if(!spend(v))return;S.invest+=v;S.investBasis=(S.investBasis||0)+v;L(`I invested ${fmt(v)} in an index fund.`)}),S.money<v));a.item('Withdraw everything',fmt(S.invest),null,act('',()=>{S.money+=S.invest;L(`I withdrew ${fmt(S.invest)} from my index fund.`);ECO.capGains(S.invest-(S.investBasis||0),'my index fund');S.invest=0;S.investBasis=0}),S.invest<=0)}));
+  api.item('Index fund',`Balance ${fmt(S.invest)}`,null,()=>sheet('Index fund',a=>{[1e3,1e4,1e5,1e6].forEach(v=>a.item(`Invest ${fmt(v)}`,'',null,act('',()=>{if(!spend(v))return;S.invest+=v;S.investBasis=(S.investBasis||0)+v;L(`I invested ${fmt(v)} in an index fund.`)}),S.money<v));a.item('Invest any amount','Use the slider, up to all your cash',null,()=>UX.amount({title:'Invest in the index fund',max:S.money,min:100,verb:v=>`Invest ${fmt(v)}`,note:v=>`You keep ${fmt(S.money-v)} in cash`,go:v=>{S.money-=v;S.invest+=v;S.investBasis=(S.investBasis||0)+v;L(`I invested ${fmt(v)} in an index fund.`)}}),S.money<100,['plus','green']);a.item('Withdraw some','Pick how much to take out',null,()=>UX.amount({title:'Withdraw from the index fund',max:S.invest,min:100,verb:v=>`Withdraw ${fmt(v)}`,note:v=>`${fmt(S.invest-v)} stays invested`,go:v=>{const b=(S.investBasis||0)*v/S.invest;S.investBasis=(S.investBasis||0)-b;S.invest-=v;S.money+=v;L(`I withdrew ${fmt(v)} from my index fund.`);ECO.capGains(v-b,'my index fund')}}),S.invest<100,['coin','orange']);a.item('Withdraw everything',fmt(S.invest),null,act('',()=>{S.money+=S.invest;L(`I withdrew ${fmt(S.invest)} from my index fund.`);ECO.capGains(S.invest-(S.investBasis||0),'my index fund');S.invest=0;S.investBasis=0}),S.invest<=0)}));
 });}
 function assetDetail(id){sheet('Asset',api=>{
   const a=S.assets.find(x=>x.id===id);if(!a){api.sub('You no longer own this.');return}
@@ -2066,6 +2076,7 @@ function newsMenu(){sheet('Market news',api=>{const ns=S.mnews||[];
 function dayTradeMenu(){sheet('Day trading',api=>{
   api.sub(`You have ${fmt(S.money)}. You can make up to 3 day trades a year. Most day traders lose money. Your smarts (${S.stats.smarts}%) give you a small edge.`);
   api.html(`<p class="sub">Trades left this year: <b>${Math.max(0,3-(S.acts.daytrade||0))}</b></p>`);
+  api.item('Trade any amount','Use the slider',null,()=>{if(!S.acts||(S.acts.daytrade||0)<3)UX.amount({title:'Day trade',sub:'Win or lose up to about half of what you trade.',max:S.money,min:1000,verb:v=>`Trade with ${fmt(v)}`,go:v=>{if(!limit('daytrade',3,'You are out of day trades for this year.'))return false;MKT.dayTrade(v)},icon:['bolt','orange']});else toast('You are out of day trades for this year.')},S.money<1000,['bolt','orange']);
   [1e3,1e4,1e5,1e6].forEach(v=>api.item(`Trade with ${fmt(v)}`,'Win or lose up to about half of it',null,act('',()=>{if(S.money<v){toast(`You need ${fmt(v)} in cash.`);return}if(!limit('daytrade',3,'You are out of day trades for this year.'))return;const g=MKT.dayTrade(v);toast(g>=0?`You made ${fmt(g)}.`:`You lost ${fmt(-g)}.`)}),S.money<v,['bolt','orange']));
 })}
 function tickerMenu(s){const m=MKT.BY[s];sheet(m.n,api=>{
@@ -2075,8 +2086,10 @@ function tickerMenu(s){const m=MKT.BY[s];sheet(m.n,api=>{
   const bought=()=>{render();refresh()};
   api.sec('Buy');
   [1e2,1e3,1e4,1e5,1e6,1e7].filter(x=>x<=Math.max(1e4,S.money*4)).forEach(x=>api.item(`Buy ${fmt(x)}`,'',null,()=>{if(MKT.buy(s,x))bought();else toast(`You need ${fmt(x)} in cash.`)},S.money<x,['plus','green']));
+  api.item('Buy any amount','Use the slider, up to all your cash',null,()=>UX.amount({title:`Buy ${m.n}`,max:S.money,min:100,verb:v=>`Buy ${fmt(v)} of ${m.s}`,note:v=>`About ${(v/pr).toLocaleString(undefined,{maximumFractionDigits:v/pr<10?4:0})} ${MKT.isCrypto(m)?'coins':'shares'} · you keep ${fmt(S.money-v)} in cash`,go:v=>MKT.buy(s,v)}),S.money<100,['plus','green']);
   [[.25,'a quarter of'],[.5,'half of'],[1,'all of']].forEach(([f,l])=>{const x=Math.floor(Math.max(0,S.money)*f);if(x>=100)api.item(`Buy with ${l} my cash`,'',fmt(x),()=>{if(MKT.buy(s,Math.floor(Math.max(0,S.money)*f)))bought()},false,['plus','green'])});
   if(n>0){api.sec('Sell');
+    api.item('Sell any amount','Use the slider',null,()=>UX.amount({title:`Sell ${m.n}`,max:v,min:Math.min(100,v),verb:x=>`Sell ${fmt(x)} of ${m.s}`,note:x=>`${fmt(v-x)} stays invested`,go:x=>{MKT.sell(s,x>=Math.floor(v)?1:x/v)},icon:['coin','orange']}),v<1,['coin','orange']);
     [[.25,'Sell a quarter'],[.5,'Sell half'],[1,'Sell everything']].forEach(([f,l])=>api.item(l,'',fmt(v*f),()=>{MKT.sell(s,f);bought()},false,['coin','orange']));
     api.sec('Automatic orders');
     api.sub(o?`Set: ${o.tp?`sell if it reaches ${o.tp}× what you paid`:''}${o.tp&&o.sl?', and ':''}${o.sl?`sell if it falls ${Math.round((1-o.sl)*100)}% below what you paid`:''}. Orders are checked once a year.`:'Sell automatically when your gain or loss reaches a level you pick. Checked once a year.');
@@ -2127,6 +2140,7 @@ function personMenu(id){const p=S.people.find(x=>x.id===id);sheet(p.name,api=>{
   api.item('Spend time together','',null,once('time',()=>{p.bond=clamp(p.bond+R(5,12));st('happy',3);L(`I spent time with my ${p.rel.toLowerCase()} ${p.name}.`)}));
   api.item('Have a conversation','',null,once('talk',()=>{p.bond=clamp(p.bond+R(1,7));L(`I had a long talk with ${p.name}.`)}));
   api.item('Give a compliment','',null,once('comp',()=>{p.bond=clamp(p.bond+R(2,6));L(`I complimented ${p.name}.`)}));
+  if(S.age>=16&&p.alive)api.item('Give money','Any amount, with the slider',null,()=>UX.amount({title:`Give money to ${fn1(p)}`,sub:['Son','Daughter','Grandson','Granddaughter'].includes(p.rel)?`Gifts to family above ${fmt(BAL.tax.inheritance.exempt)} in total are taxed like an inheritance.`:'',max:S.money,min:100,verb:v=>`Give ${fmt(v)} to ${fn1(p)}`,go:v=>giveMoney(p,v),icon:['gift','gold']}),S.money<100,['gift','gold']);
   if(S.age>=6)api.item('Give a gift','$250',null,once('gift',()=>{if(S.money<250){delete S.acts['gift'+p.id];toast(`A gift costs ${fmt(250)} and you have ${fmt(S.money)}.`);return}S.money-=250;p.bond=clamp(p.bond+R(6,14));L(`I gave ${p.name} a gift.`)}));
   if(['Mother','Father'].some(r=>p.rel.startsWith(r))||p.rel==='Spouse')api.item('Ask for money','',null,once('money',()=>{if(C(p.bond/150)&&p.money>500){const a=Math.min(p.money,R(1,20)*(S.age<18?10:250));p.money-=a;S.money+=a;L(`${p.name} gave me ${fmt(a)}.`,'good')}else{p.bond=clamp(p.bond-4);L(`${p.name} said no when I asked for money.`)}}));
   api.item('Argue','',null,once('argue',()=>{p.bond=clamp(p.bond-R(8,16));st('happy',-3);L(`I got into an argument with ${p.name}.`,'bad')}));
@@ -2320,6 +2334,7 @@ const BETS=[
 function betMenu(){sheet('Casino & betting',api=>{api.sub(`You have ${fmt(S.money)}. The house always has the edge.`);
   api.item('Blackjack','Beat the dealer',null,casino,false,['dice','purple']);
   api.item('Roulette','A full table: numbers, colors, dozens and columns',null,UX.roulette,false,['dice','red']);
+  api.item('High-stakes table: bet any amount','Double or nothing. Use the slider.',null,()=>{if((S.acts.hs||0)>=3){toast('The high-stakes room has closed for the year.');return}UX.amount({title:'High-stakes bet',sub:'Double or nothing. Slightly worse than a coin flip.',max:S.money,min:1000,verb:v=>`Bet ${fmt(v)}`,note:v=>`Win: ${fmt(S.money+v)} · Lose: ${fmt(S.money-v)}`,go:v=>{if(!limit('hs',3,'The high-stakes room has closed for the year.'))return false;if(C(BAL.highStakes.winChance)){S.money+=v;L(`I won ${fmt(v)} at the high-stakes table!`,'good')}else{S.money-=v;L(`I lost ${fmt(v)} at the high-stakes table.`,'bad')}},icon:['dice','purple']})},S.money<1000,['dice','purple']);
   BAL.highStakes.shares.forEach(sh=>{const bet=Math.round(Math.max(0,S.money)*sh);api.item(`High-stakes table: bet ${Math.round(sh*100)}% of your cash`,'Double or nothing',bet>0?fmt(bet):null,act('',()=>{if(!limit('hs',3,'The high-stakes room has closed for the year.'))return;if(bet<1000){toast('You need at least $1,000 in cash.');return}if(C(BAL.highStakes.winChance)){S.money+=bet;L(`I won ${fmt(bet)} at the high-stakes table!`,'good')}else{S.money-=bet;L(`I lost ${fmt(bet)} at the high-stakes table.`,'bad')}}),S.money<1000,['dice','red'])});
   BETS.forEach(([n,d,fn])=>api.item(n,d,null,n.startsWith('Bet on a horse')?fn:act('',()=>{if(!limit('bet'+n,5,'The pit boss suggests you take a break.'))return;fn()}),false,['dice','purple']));});}
 /* ---------- the mysterious and the fantastic ---------- */
@@ -2384,6 +2399,7 @@ function moreActs(api){
   if(a>=3)api.item('Style & self-care','Hair, tattoos, therapy, skincare',null,()=>sheet('Style & self-care',x=>STYLE.forEach(k=>doIt(x,k))),false,['brush','pink']);
   if(a>=16)api.item('Everyday life','Taxes, wills, classes, garage sales',null,()=>sheet('Everyday life',x=>ADULT.forEach(k=>doIt(x,k))),false,['home','blue']);
   if(a>=18)api.item('Casino & betting','Slots, roulette, horses, poker',null,betMenu,false,['dice','purple']);
+  if(a>=16)api.item('Donate to charity','Give any amount to a cause you care about',null,donateMenu,S.money<10,['heart','red']);
   if(a>=4)api.item('The great outdoors','Camping, rafting, expeditions',null,()=>sheet('The great outdoors',x=>OUTDOORS.forEach(k=>doIt(x,k))),false,['globe','green']);
   if(a>=5)api.item('Mysterious & fantasy','Ghosts, magic, dragons, heroes, portals',null,mysteryMenu,false,['star','purple']);
 }
@@ -2613,9 +2629,13 @@ function investMenu(){sheet('Bonds, gold & startups',api=>{const v=inv2();
   api.sec('Bonds pay interest every year');
   [['gov','Government bonds','3.5% a year, very safe'],['corp','Corporate bonds','6% a year, small default risk'],['junk','High-yield bonds','11% a year, real default risk']].forEach(([k,n,d])=>{
     [1e4,1e5,1e6].forEach(amt=>api.item(`Buy ${fmt(amt)} of ${lc(n)}`,d,null,act('',()=>{if(!spend(amt))return;v[k]+=amt;L(`I bought ${fmt(amt)} of ${lc(n)}.`)}),S.money<amt,['chart','green']));
+    api.item(`Buy any amount of ${lc(n)}`,'Use the slider',null,()=>UX.amount({title:n,sub:d+'.',max:S.money,min:1000,verb:x=>`Buy ${fmt(x)} of ${lc(n)}`,note:x=>`Earns about ${fmt(x*BAL.bonds[k])} a year · you keep ${fmt(S.money-x)} in cash`,go:x=>{S.money-=x;v[k]+=x;L(`I bought ${fmt(x)} of ${lc(n)}.`)}}),S.money<1000,['chart','green']);
+    if(v[k]>=1000)api.item(`Sell some ${lc(n)}`,'Use the slider',null,()=>UX.amount({title:`Sell ${lc(n)}`,max:v[k],min:1000,verb:x=>`Sell ${fmt(x)}`,note:x=>`${fmt(v[k]-x)} stays invested`,go:x=>{v[k]-=x;S.money+=x;L(`I sold ${fmt(x)} of ${lc(n)}.`)},icon:['coin','gold']}),false,['coin','gold']);
     api.item(`Sell all ${lc(n)}`,'',fmt(v[k]),act('',()=>{S.money+=v[k];L(`I sold ${fmt(v[k])} of ${lc(n)}.`);v[k]=0}),!v[k],['coin','gold'])});
   api.sec('Gold moves with fear and inflation');
   [1e4,1e5,1e6].forEach(amt=>api.item(`Buy ${fmt(amt)} of gold`,'',null,act('',()=>{if(!spend(amt))return;v.gold+=amt;v.goldBasis=(v.goldBasis||0)+amt;L(`I bought ${fmt(amt)} of gold.`)}),S.money<amt,['coin','gold']));
+  api.item('Buy any amount of gold','Use the slider',null,()=>UX.amount({title:'Buy gold',max:S.money,min:1000,verb:x=>`Buy ${fmt(x)} of gold`,note:x=>`You keep ${fmt(S.money-x)} in cash`,go:x=>{S.money-=x;v.gold+=x;v.goldBasis=(v.goldBasis||0)+x;L(`I bought ${fmt(x)} of gold.`)}}),S.money<1000,['coin','gold']);
+  if(v.gold>=1000)api.item('Sell some gold','Use the slider',null,()=>UX.amount({title:'Sell gold',max:v.gold,min:1000,verb:x=>`Sell ${fmt(x)} of gold`,note:x=>`${fmt(v.gold-x)} of gold left`,go:x=>{const b=(v.goldBasis||0)*x/v.gold;v.goldBasis=(v.goldBasis||0)-b;v.gold-=x;S.money+=x;L(`I sold ${fmt(x)} of gold.`);ECO.capGains(x-b,'gold')},icon:['coin','gold']}),false,['coin','gold']);
   api.item('Sell all gold','',fmt(v.gold),act('',()=>{S.money+=v.gold;L(`I sold ${fmt(v.gold)} of gold.`);ECO.capGains(v.gold-(v.goldBasis||0),'gold');v.gold=0;v.goldBasis=0}),!v.gold,['coin','gold']);
   api.sec('Angel investing');
   if(S.flags.pitchAge!==S.age){S.flags.pitchAge=S.age;S.flags.pitches=[0,1,2].map(()=>({n:`${P(['Orbit','Kind','Pocket','Nova','Loop','Bright','Tandem','Ember','Quill','Atlas'])}${P(['ly','Labs','Hub','Works','AI','Pay','Health','Go','Box','Mint'])}`,what:P(['food delivery by drone','an app for dog walkers','AI tutoring for kids','lab-grown leather','a budgeting app for teens','modular tiny homes','a smart bike lock','plant-based seafood','a dating app for gamers','solar roof tiles']),ask:R(25,250)*1000}))}
@@ -2669,6 +2689,15 @@ SOCIAL.push(
 );
 function packsYear(){zooYear();museumYear();contrabandYear();vipYear();inv2Year();}
 
+// Give money to someone. Big gifts to family count against the inheritance allowance.
+function giveMoney(p,v){
+  const fam=['Son','Daughter','Grandson','Granddaughter','Mother','Father','Brother','Sister','Spouse'].some(r=>p.rel.startsWith(r));
+  let tax=0;if(fam&&p.rel!=='Spouse'){const prev=p.gifted||0,ex=BAL.tax.inheritance.exempt;tax=Math.round((Math.max(0,prev+v-ex)-Math.max(0,prev-ex))*BAL.tax.inheritance.rate*Math.min(1.3,ECO.taxMult()));p.gifted=prev+v}
+  S.money-=v+tax;p.money=(p.money||0)+v;const rel=v/Math.max(1000,Math.abs(S.money)+v);p.bond=clamp(p.bond+Math.round(4+rel*30));kar(Math.min(4,1+Math.floor(Math.log10(Math.max(10,v))/2)));
+  L(`I transferred ${fmt(v)} to ${p.name} as a gift${tax?` and paid ${fmt(tax)} in gift tax`:''}.`,'good');S.yearTax=(S.yearTax||0)+tax}
+function donateMenu(){const causes=["a children's hospital",'an animal shelter','a food bank','a wildlife fund','a literacy charity','cancer research','clean water projects','a homeless shelter'];
+  sheet('Donate to charity',api=>{api.sub('Pick a cause, then choose how much to give. Generosity raises karma and happiness.');
+    causes.forEach(c=>api.item(c[0].toUpperCase()+c.slice(1),'',null,()=>UX.amount({title:'Donation',sub:`To ${c}.`,max:S.money,min:10,verb:v=>`Donate ${fmt(v)}`,go:v=>{if(!limit('donate',3,'You have made enough donations this year.'))return false;S.money-=v;const k=Math.min(15,2+Math.round(Math.log10(Math.max(10,v))*1.5));kar(k);st('happy',Math.min(8,2+Math.floor(Math.log10(Math.max(10,v)))));if(v>=1e6){S.fame=clamp(S.fame+Math.min(10,Math.round(Math.log10(v/1e5))*2))}L(`I donated ${fmt(v)} to ${c}.`,'good')},icon:['heart','red']}),S.money<10,['heart','red']))})}
 function actMenu(){sheet('Activities',api=>{
   api.sub(`Free time left this year: <b>${RULES.timeLeft()} of ${RULES.timeBudget()}</b>. Most activities use 1.${S.job||S.sp?' Your work takes up 4.':''}`);
   const a=S.age,adult=a>=18;

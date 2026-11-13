@@ -203,7 +203,7 @@ const UX = (() => {
     }
     sheet('Blackjack', api => {
       api.sub(`You have ${fmt(S.money)}. Get closer to 21 than the dealer without going over. Blackjack pays 3 to 2, and the dealer draws to 17.`);
-      if (B.phase === 'bet') { [100, 1e3, 1e4, 1e5, 1e6].forEach(b => api.item(`Bet ${fmt(b)}`, '', null, () => deal(b), S.money < b, ['dice', 'purple'])); return; }
+      if (B.phase === 'bet') { [100, 1e3, 1e4, 1e5, 1e6].forEach(b => api.item(`Bet ${fmt(b)}`, '', null, () => deal(b), S.money < b, ['dice', 'purple'])); api.item('Bet any amount', 'Use the slider, up to all your cash', null, () => amount({ title: 'Your bet', max: S.money, min: 100, start: B.bet || undefined, verb: v => `Bet ${fmt(v)}`, note: v => `You keep ${fmt(S.money - v)} in cash`, go: v => { deal(v); }, icon: ['dice', 'purple'] }), S.money < 100, ['dice', 'purple']); return; }
       api.html(`<div class="bj"><small>Dealer${B.phase === 'play' ? '' : ' · ' + val(B.dl)}</small>${hand(B.dl, B.phase === 'play')}<small>You · ${val(B.me)}</small>${hand(B.me)}<p class="bj-msg ${B.cls}">${B.msg || `Your bet: ${fmt(B.bet)}`}</p></div>`);
       if (B.phase === 'play') {
         api.item('Hit', 'Take another card', null, () => { B.me.push(card()); if (val(B.me) >= 21) finish(); refresh(); }, false, ['plus', 'green']);
@@ -269,7 +269,7 @@ const UX = (() => {
       const tot = staked();
       api.sub(`You have ${fmt(S.money)}. Pick a chip, tap the table to place it, then spin. A single number pays 35 to 1, dozens and columns 2 to 1, and red, black, odd, even, high and low 1 to 1. Zero belongs to the house.`);
       const ballN = RL.last == null ? '' : RL.last;
-      const chipRow = [100, 1e3, 1e4, 1e5, 1e6].map(v => `<button type="button" class="rl-chipbtn${RL.chip === v ? ' on' : ''}" data-chip="${v}" aria-pressed="${RL.chip === v}" ${S.money < v ? 'disabled' : ''}>${short(v)}</button>`).join('');
+      const chipRow = [100, 1e3, 1e4, 1e5, 1e6].map(v => `<button type="button" class="rl-chipbtn${RL.chip === v ? ' on' : ''}" data-chip="${v}" aria-pressed="${RL.chip === v}" ${S.money < v ? 'disabled' : ''}>${short(v)}</button>`).join('') + (() => { const std = [100, 1e3, 1e4, 1e5, 1e6].includes(RL.chip); return `<button type="button" class="rl-chipbtn custom${std ? '' : ' on'}" data-chip="custom" aria-label="Choose any chip value">${std ? 'Any' : short(RL.chip)}</button>`; })();
       const cell = (k, label, cls, style) => { const v = RL.bets[k]; const hit = RL.last != null && !RL.spin && rlBet(k).nums.includes(RL.last);
         return `<button type="button" class="rl-c ${cls}${hit ? ' hit' : ''}" data-rl="${k}" style="${style}" aria-label="Bet on ${rlBet(k).name}${v ? ', ' + short(v) + ' placed' : ''}">${label}${v ? `<span class="rl-chip">${short(v)}</span>` : ''}</button>`; };
       let g = `<button type="button" class="rl-c z${RL.last === 0 && !RL.spin ? ' hit' : ''}" data-rl="n0" style="grid-column:2/5;grid-row:1" aria-label="Bet on 0${RL.bets.n0 ? ', ' + short(RL.bets.n0) + ' placed' : ''}">0${RL.bets.n0 ? `<span class="rl-chip">${short(RL.bets.n0)}</span>` : ''}</button>`;
@@ -286,12 +286,45 @@ const UX = (() => {
         <div class="rl-chips">${chipRow}</div>
         <div class="rl-grid">${g}</div></div>`);
       box.addEventListener('click', e => {
-        const c = e.target.closest('[data-chip]'); if (c) { RL.chip = +c.dataset.chip; refresh(); return; }
+        const c = e.target.closest('[data-chip]'); if (c) { if (c.dataset.chip === 'custom') { amount({ title: 'Chip value', sub: 'Each tap on the table places one chip of this value.', max: S.money, min: 100, start: RL.chip, verb: v => `Use ${fmt(v)} chips`, note: v => `${Math.floor(S.money / v)} chips' worth of cash`, go: v => { RL.chip = v; }, icon: ['dice', 'red'] }); return; } RL.chip = +c.dataset.chip; refresh(); return; }
         const b = e.target.closest('[data-rl]'); if (b) place(b.dataset.rl);
       });
       api.item(RL.spin ? 'Spinning…' : 'Spin the wheel', tot ? `${fmt(tot)} on the table` : 'Place a chip first', null, spin, RL.spin || !tot, ['dice', 'purple']);
       if (tot) api.item('Clear my bets', 'Take your chips back', null, () => { if (RL.spin) return; RL.bets = {}; refresh(); }, RL.spin, ['close', 'red']);
       else if (RL.prev) { const pt = Object.values(RL.prev).reduce((a, b) => a + b, 0); api.item('Repeat my last bets', fmt(pt), null, () => { if (S.money < pt) { toast(`You need ${fmt(pt)} in cash.`); return; } RL.bets = { ...RL.prev }; refresh(); }, RL.spin || S.money < pt, ['coin', 'gold']); }
+    });
+  }
+
+  /* ---------- amount picker: a slider for "how much?" (log scale, so $100 and $1 billion both fit) ---------- */
+  // o: { title, sub, max, min, start, verb: v => button label, note: v => line under the amount, go: v => do it (return false to stay) }
+  function nice(v) { if (v < 1000) return Math.round(v / 10) * 10 || v; const p = Math.pow(10, Math.floor(Math.log10(v)) - 2); return Math.round(v / p) * p; }
+  function amount(o) {
+    const min = Math.max(1, o.min || 100);
+    sheet(o.title, api => {
+      const max = Math.floor(o.max);
+      if (o.sub) api.sub(o.sub);
+      if (!(max >= min)) { api.sub(o.empty || `You need at least ${fmt(min)}.`); return; }
+      const ratio = max / min, toV = pos => pos >= 1000 ? max : pos <= 0 ? min : Math.min(max, Math.max(min, nice(min * Math.pow(ratio, pos / 1000))));
+      const toPos = v => ratio <= 1 ? 1000 : Math.round(Math.log(v / min) / Math.log(ratio) * 1000);
+      let val = Math.min(max, Math.max(min, o.start != null ? o.start : nice(Math.sqrt(min * max))));
+      const pcts = [[0.1, '10%'], [0.25, '25%'], [0.5, 'Half'], [1, 'All']].filter(([f]) => max * f >= min);
+      const box = api.html(`<div class="amt-pick">
+        <div class="amt-big" aria-live="polite"></div><div class="amt-note"></div>
+        <input type="range" class="amt-r" min="0" max="1000" step="1" aria-label="Amount">
+        <div class="amt-scale"><span>${esc(FMT.plain(fmt(min)))}</span><span>${esc(FMT.plain(fmt(max)))}</span></div>
+        <div class="amt-row"><input type="text" class="amt-t" inputmode="decimal" autocomplete="off" aria-label="Type an amount">${pcts.map(([f, l]) => `<button type="button" class="chip" data-f="${f}">${l}</button>`).join('')}</div></div>`);
+      const R0 = box.querySelector('.amt-r'), T = box.querySelector('.amt-t'), big = box.querySelector('.amt-big'), note = box.querySelector('.amt-note');
+      const btn = api.item(o.verb(val), '', null, () => { const y = S.log[S.log.length - 1], n = y.lines.length; const r = o.go(val); if (r !== false) { render(); save(); if (stack.length > 1) { stack.pop(); draw(); } else close(); const ny = S.log[S.log.length - 1]; if (ny === y && ny.lines.length > n) toast(ny.lines[ny.lines.length - 1].t); } }, false, o.icon || ['coin', 'green']);
+      function show(v, from) {
+        val = v; big.textContent = FMT.full(v, true); note.textContent = FMT.plain(o.note ? o.note(v) : `${Math.round(v / max * 100)}% of the most you can put in`);
+        if (from !== 'r') R0.value = toPos(v); if (from !== 't') T.value = FMT.full(v, false);
+        btn.querySelector('b').textContent = FMT.plain(o.verb(v));
+      }
+      R0.addEventListener('input', () => show(toV(+R0.value), 'r'));
+      T.addEventListener('input', () => { const x = parseAmount(T.value); if (x != null && x >= min) show(Math.min(max, Math.round(x)), 't'); });
+      T.addEventListener('change', () => show(val));
+      box.querySelectorAll('[data-f]').forEach(b => b.addEventListener('click', () => show(+b.dataset.f >= 1 ? max : Math.max(min, nice(max * b.dataset.f)))));
+      show(val);
     });
   }
 
@@ -382,5 +415,5 @@ const UX = (() => {
     if (id) { const b = el(id); if (b && !b.disabled) { e.preventDefault(); b.click(); } }
   });
 
-  return { applyTheme, lines, chips, side, profile, onDeath, pastLives, skip, swallow, sure, blackjack, roulette, rlBet, menuTop, menu, migrate, year, deathExtra, welcome, chart, goalRows, GOALS };
+  return { applyTheme, lines, chips, side, profile, onDeath, pastLives, skip, swallow, sure, blackjack, roulette, rlBet, amount, menuTop, menu, migrate, year, deathExtra, welcome, chart, goalRows, GOALS };
 })();
