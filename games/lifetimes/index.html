@@ -36,7 +36,7 @@ svg{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-lin
 .ico{flex:none;width:40px;height:40px;border-radius:13px;display:grid;place-items:center;color:var(--c);background:color-mix(in srgb,var(--c) 15%,transparent)}
 .ico svg{width:21px;height:21px}
 #app{max-width:620px;margin:0 auto;height:100%;display:grid;grid-template-columns:minmax(0,1fr);
-  grid-template-rows:auto auto minmax(0,1fr) auto;grid-template-areas:"head" "tools" "log" "nav";column-gap:24px;
+  grid-template-rows:auto minmax(0,1fr) auto;grid-template-areas:"head" "log" "nav";column-gap:24px;
   padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px))}
 /* hero */
 .hero{grid-area:head;margin-top:12px;background:var(--panel);border-radius:26px;padding:14px 14px 12px;box-shadow:var(--shadow);border:1px solid var(--line)}
@@ -190,13 +190,60 @@ nav button:disabled{opacity:.4;cursor:not-allowed}
 @media (max-width:420px){.row2{grid-template-columns:1fr}.who h1{font-size:20px}.money b{font-size:18px}.stats{gap:8px}.stat .sl span{display:none}.tbtn{font-size:12.5px;gap:4px;padding:8px 4px}}
 @media (min-width:700px){#ov{align-items:center;padding:16px}.sheet{border-radius:28px;max-height:84%}.grab{display:none}.sheet-h{padding-top:18px}}
 @media (min-width:960px){
-  #app{max-width:1140px;grid-template-columns:370px minmax(0,1fr);grid-template-rows:auto auto minmax(0,1fr) auto;
-    grid-template-areas:"head log" "tools log" "side log" "side nav"}
+  #app{max-width:1140px;grid-template-columns:370px minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto;
+    grid-template-areas:"head log" "side log" "side nav"}
   .side{display:block;overflow-y:auto;min-height:0;padding-bottom:14px}
   .stats{grid-template-columns:1fr 1fr;gap:10px 16px}
   #log{padding-top:16px}
   nav{margin-top:6px}
 }
+
+/* ---------- phase 4 ---------- */
+.hero{position:relative}
+.menubtn{flex:none;align-self:flex-start;width:40px;height:40px;border-radius:14px;border:1px solid var(--line);background:var(--panel2);display:grid;place-items:center;box-shadow:0 2px 0 var(--line)}
+.menubtn svg{width:20px;height:20px}
+.menubtn:hover{border-color:var(--blue);color:var(--blue)}
+.wealth{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:8px;margin-top:12px}
+.wealth>div{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:6px 12px;min-width:0}
+.wealth>div>span{display:block;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.wealth b{display:block;font-family:var(--display);font-weight:800;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.w-nw b{font-size:24px;color:var(--good)}
+.w-cash b{font-size:17px;color:var(--ink)}
+.wealth b.neg{color:var(--bad)}
+.stat .delta{font-size:11px;font-weight:800;margin-left:3px}
+.stat .delta.up{color:var(--good)}.stat .delta.down{color:var(--bad)}
+.amt{font-weight:800;border-bottom:1px dotted currentColor;cursor:help}
+.amt.up{color:var(--good)}.amt.down{color:var(--bad)}
+#log{padding-top:0}
+.yr{display:block;padding:0 0 6px}
+.yh{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:8px;padding:8px 2px 6px;background:var(--bg)}
+.yh b{font-family:var(--display);font-weight:800;font-size:15px;background:var(--panel);border:2px solid var(--line);border-radius:999px;padding:1px 12px;color:var(--ink)}
+.yh small{font-weight:800;color:var(--muted);font-size:12px}
+.yr.now .yh b{background:var(--orange);border-color:var(--orange);color:#fff}
+.yr .lines{display:flex;flex-direction:column;gap:5px}
+.yr .lines p{display:flex;align-items:flex-start;gap:9px}
+.yr .lines p .li{flex:none;width:24px;height:24px;border-radius:8px;display:grid;place-items:center;color:var(--c);background:color-mix(in srgb,var(--c) 15%,transparent);margin-top:1px}
+.yr .lines p .li svg{width:14px;height:14px}
+.yr .lines p .lt{flex:1;min-width:0}
+.yr .lines p .x{flex:none;font-size:11px;font-weight:800;padding:1px 7px;border-radius:999px;background:var(--panel2);color:var(--muted);align-self:center}
+.ysum{background:color-mix(in srgb,var(--blue) 8%,var(--panel));border:1px solid color-mix(in srgb,var(--blue) 25%,var(--line));border-radius:14px;padding:8px 12px;margin-bottom:5px;font-size:13.5px;font-weight:700;display:flex;flex-wrap:wrap;gap:4px 12px}
+.ysum .k{color:var(--muted);font-weight:800;text-transform:uppercase;font-size:11px;letter-spacing:.05em;width:100%}
+.ysum .chg.up{color:var(--good)}.ysum .chg.down{color:var(--bad)}
+.ysum .key{width:100%;color:var(--ink);font-weight:600}
+.yr.quiet .yh b{font-size:12px;border-style:dashed;color:var(--muted);background:none}
+.yr.quiet .yh small{font-style:italic;font-weight:600}
+#floats{position:fixed;left:50%;bottom:calc(110px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:25;pointer-events:none;display:flex;flex-direction:column;align-items:center;gap:4px}
+.fl{font-family:var(--display);font-weight:800;font-size:16px;padding:2px 10px;border-radius:999px;background:var(--panel);box-shadow:var(--shadow);animation:floatup 1.7s ease-out forwards}
+.fl.up{color:var(--good)}.fl.down{color:var(--bad)}
+@keyframes floatup{0%{transform:translateY(10px);opacity:0}15%{opacity:1}100%{transform:translateY(-70px);opacity:0}}
+nav button.age.pulse{animation:agepulse .3s ease-out}
+@keyframes agepulse{0%{transform:scale(1)}40%{transform:scale(.88)}100%{transform:scale(1)}}
+.bignews{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px;text-align:left}
+.bignews li{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:8px 12px;font-weight:600}
+.bignews li.good{border-color:color-mix(in srgb,var(--good) 40%,var(--line))}.bignews li.bad{border-color:color-mix(in srgb,var(--bad) 40%,var(--line))}
+@media (prefers-reduced-motion:reduce){.fl{animation:fadeonly 1.7s forwards}nav button.age.pulse{animation:none}}
+@keyframes fadeonly{0%{opacity:1}100%{opacity:0}}
+@media (max-width:420px){.w-nw b{font-size:21px}.w-cash b{font-size:15px}.wealth>div{padding:5px 10px}}
 </style>
 
 
@@ -205,15 +252,11 @@ nav button:disabled{opacity:.4;cursor:not-allowed}
     <div class="hero-top">
       <div class="portrait"><div class="face" id="face"></div><span class="agebadge" id="ageBadge">0</span></div>
       <div class="who"><h1 id="nm">—</h1><p id="sub">—</p><div class="tags" id="tags"></div></div>
-      <div class="money"><b id="mn">$0</b><small id="nw">net worth $0</small></div>
+      <button class="menubtn" id="bMenu" type="button" aria-label="Menu"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
     </div>
+    <div class="wealth"><div class="w-nw"><span>Net worth</span><b id="nw">$0</b></div><div class="w-cash"><span>Cash</span><b id="mn">$0</b></div></div>
     <div class="stats" id="stats"></div>
   </header>
-  <div class="toolbar">
-    <button class="tbtn god" id="bGod" type="button"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></svg>God Mode</button>
-    <button class="tbtn" id="bTime" type="button"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/><path d="M12 7v5l3 2"/></svg>Time Machine</button>
-    <button class="tbtn" id="bNew" type="button"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>New Life</button>
-  </div>
   <div id="log" aria-live="polite"></div>
   <aside class="side" id="side"></aside>
   <nav>
@@ -226,7 +269,10 @@ nav button:disabled{opacity:.4;cursor:not-allowed}
 </div>
 <div id="ov" hidden></div>
 <div id="toast" role="status" hidden></div>
+<div id="floats" aria-hidden="true"></div>
+<button id="bGod" type="button" hidden></button>
 
+<script src="format.js"></script>
 <script src="balance.js"></script>
 <script src="economy.js"></script>
 <script src="careers.js"></script>
@@ -243,7 +289,8 @@ const clamp=(v,a=0,b=100)=>Math.max(a,Math.min(b,Math.round(v)));
 const lc=n=>n?n[0].toLowerCase()+n.slice(1):n;
 const an=n=>/^[aeiou]/i.test(n)?'an':'a';
 const remote=n=>/island|castle|estate|acreage|cabin|villa/i.test(n);
-const fmt=n=>(n<0?'-':'')+'$'+Math.abs(Math.round(n)).toLocaleString('en-US');
+const fmt=n=>FMT.money(n);
+const fmtN=n=>FMT.num(n);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const SAVE='lifetimes-save-v1';
 const fn1=p=>p.name.split(' ')[0];
@@ -467,7 +514,7 @@ function newLife(o={}){
   if(royal)L(`I was born into the royal house of ${S.country} as ${S.royal.title} ${S.name.split(' ')[0]}.`,'good');
   const m=S.people.find(p=>p.rel.startsWith('Mother')),f=S.people.find(p=>p.rel.startsWith('Father'));
   if(m&&f&&!o.people)L(`My mother is ${m.name} (${m.age}) and my father is ${f.name} (${f.age}).`);
-  LEG.initLife(o);migrate();snap();save();render();
+  LEG.initLife(o);migrate();S.ys=yearSnap();snap();save();render();
 }
 function spend(c,what){if(S.money>=c){S.money-=c;return true}toast(`Not enough money${what?' for '+what:''}. You need ${fmt(c)} and have ${fmt(S.money)}.`);return false}
 function limit(k,n,msg){S.acts[k]=S.acts[k]||0;if(S.acts[k]>=n){toast(msg||'You have done that enough for this year.');return false}if(!RULES.spendTime(k)){toast('You have no free time left this year. Age up to get more.');return false}S.acts[k]++;return true}
@@ -580,11 +627,12 @@ const IC={
  cake:'<path d="M4 21V12h16v9zM4 16c2 1 4 1 4-1 0 2 4 2 4 0 0 2 4 2 4 0 0 2 2 2 4 1M12 12V8M12 5v.01"/>',
 };
 const ICON_RULES=[
+ [/lawsuit|suing|\bsued?\b|court|legal|lawyer|judge|arrest|police|convicted/i,'hammer','red'],
  [/\b(gym|run|marathon|work out|tryout|team|shape)\b/i,'dumbbell','green'],
  [/doctor|treat|cure|surgery|hospital|chest|diagnos|ill|sick|pain|check-up/i,'pill','red'],
  [/meditat|vacation|cruise|road trip|relax/i,'smile','teal'],
  [/birthday|graduat|anniversary|prom|dance|reunion/i,'cake','pink'],
- [/library|study|ged|universit|school|degree|major|graduate|phd|mba|tutor|exam|science fair|answer|homework|class/i,'cap','blue'],
+ [/library|study|\bged\b|universit|school|degree|major|graduate|phd|mba|tutor|exam|science fair|answer|homework|class/i,'cap','blue'],
  [/lottery|ticket/i,'ticket','gold'],
  [/casino|\bbet\b|blackjack/i,'dice','purple'],
  [/social media|\bpost\b|go live|selfie|video|paparazzi|brand deal|followers/i,'camera','pink'],
@@ -622,7 +670,7 @@ function render(){
   $('#face').innerHTML=face();$('#face').classList.toggle('dead',!S.alive);
   $('#ageBadge').textContent=S.age;
   $('#nm').textContent=(S.royal&&!S.royal.overthrown?(S.royal.monarch?(he()?'King ':'Queen '):S.royal.title+' '):'')+S.name;
-  $('#sub').textContent=`${stage()} · ${S.country}`;
+  $('#sub').textContent=`Age ${S.age} · ${(S.year0||2026)+S.age} · ${stage()} · ${S.country}`;
   const tags=[];
   if(!S.alive)tags.push('<span class="tag bad">Deceased</span>');
   if(S.royal&&!S.royal.overthrown)tags.push(`<span class="tag royal">Approval ${S.royal.pop}%</span>`);
@@ -633,34 +681,78 @@ function render(){
   if(S.ill.length)tags.push(`<span class="tag bad">${esc(S.ill.map(i=>i.n).join(', '))}</span>`);
   $('#tags').innerHTML=tags.join('');
   $('#mn').textContent=fmt(S.money);$('#mn').classList.toggle('neg',S.money<0);
-  $('#nw').textContent='net worth '+fmt(netWorth());
+  {const nw=netWorth();$('#nw').textContent=fmt(nw);$('#nw').classList.toggle('neg',nw<0)}
   const st=[['Happy','happy'],['Health','health'],['Smarts','smarts'],['Looks','looks']];
-  $('#stats').innerHTML=st.map(([l,k])=>{const v=S.stats[k];const col=v>=60?'var(--good)':v>=30?'var(--warn)':'var(--bad)';
-    return `<div class="stat" title="${l} ${v}%"><div class="sl"><svg viewBox="0 0 24 24" style="color:${col}">${ICONS[k]}</svg><span>${l}</span><b>${v}%</b></div><div class="bar"><i style="width:${v}%;background:${col}"></i></div></div>`}).join('');
+  $('#stats').innerHTML=st.map(([l,k])=>{const v=S.stats[k];const col=v>70?'var(--good)':v>=40?'var(--warn)':'var(--bad)';const prev=S.ys&&S.ys.stats?S.ys.stats[k]:v,d=v-prev;
+    return `<div class="stat" title="${l} ${v}% (${d>=0?'+':''}${d} since last year)"><div class="sl"><svg viewBox="0 0 24 24" style="color:${col}">${ICONS[k]}</svg><span>${l}</span><b>${v}%${d?`<span class="delta ${d>0?'up':'down'}">${d>0?'▲':'▼'}${Math.abs(d)}</span>`:''}</b></div><div class="bar"><i style="width:${v}%;background:${col}"></i></div></div>`}).join('');
   const last=S.log.length-1;let html='',quiet=[];
   const flush=()=>{if(!quiet.length)return;const a=quiet[0],b=quiet[quiet.length-1];
-    html+=`<div class="yr quiet"><div class="age"><b>${a===b?a:a+'+'}</b></div><div class="lines"><p>${a===b?`Age ${a}: a quiet year.`:`Ages ${a}–${b}: quiet years.`}</p></div></div>`;quiet=[]};
+    html+=`<div class="yr quiet"><div class="yh"><b>${a===b?a:a+'–'+b}</b><small>${a===b?'A quiet year':'Quiet years'}</small></div></div>`;quiet=[]};
   S.log.forEach((y,i)=>{const now=i===last;
     if(!y.lines.length&&!now){quiet.push(y.age);return}
     flush();
-    html+=`<div class="yr${now&&S.alive?' now':''}"><div class="age"><b>${y.age}</b><small>${(S.year0||2026)+y.age}</small></div><div class="lines">${
-      y.lines.length?y.lines.map(l=>`<p class="${l.c}">${esc(l.t)}</p>`).join(''):'<p class="hint">Nothing yet this year. Try Activities, or press +1.</p>'}</div></div>`});
+    const sum=now?liveSummary():y.sum;
+    html+=`<div class="yr${now&&S.alive?' now':''}"><div class="yh"><b>Age ${y.age}</b><small>${(S.year0||2026)+y.age}</small></div>${sum?summaryCard(sum,y,now):''}<div class="lines">${
+      y.lines.length?groupLines(y.lines).map(g=>{const [ic,col]=iconFor(FMT.plain(g.t))||['tag','blue'];return `<p class="${g.c}"><span class="li c-${col}">${svgI(ic)}</span><span class="lt">${esc(g.t)}</span>${g.n>1?`<span class="x">×${g.n}</span>`:''}</p>`}).join(''):'<p class="hint">Nothing yet this year. Try Activities, or press +1.</p>'}</div></div>`});
   flush();
-  $('#log').innerHTML=html;
-  $('#log').scrollTop=1e9;
+  $('#log').innerHTML=html;richify($('#log'),true);
+  {const lg=$('#log');lg.style.scrollBehavior='auto';lg.scrollTop=1e9;lg.style.scrollBehavior=''}
   const nk=kids().length;
   const rows=[['Net worth',fmt(netWorth())],['Occupation',stage()],['Education',S.edu.degrees.slice(-1)[0]||'None yet'],['Relationship',relStatus()],
     ['Children',nk||'None'],['Pets',S.pets.filter(p=>p.alive).map(p=>p.name).join(', ')||'None'],['Possessions',S.assets.length||'None'],['Businesses',S.biz.length||'None'],
-    ['Followers',S.followers.toLocaleString()],['Karma',S.karma+'%'],['Reputation',(S.rep==null?50:S.rep)+'%'],['Convictions',S.record],['Economy',{expansion:'Growing',boom:'Booming',recession:'Recession',crash:'Crash'}[ECO.phase()]],['Free time left',`${RULES.timeLeft()} of ${RULES.timeBudget()}`],['Traits',(S.traits||[]).map(t=>LEG.TRAITS[t].name).join(', ')||'—'],['Generation',S.gen]].concat(S.challenge?[['Challenge',`${(LEG.CHALLENGES.find(c=>c.id===S.challenge.id)||{name:'?'}).name}: ${S.challenge.status}`]]:[]).concat(S.flags.assisted?[['Achievements','Off for this life']]:[]);
+    ['Followers',fmtN(S.followers)],['Karma',S.karma+'%'],['Reputation',(S.rep==null?50:S.rep)+'%'],['Convictions',S.record],['Economy',{expansion:'Growing',boom:'Booming',recession:'Recession',crash:'Crash'}[ECO.phase()]],['Free time left',`${RULES.timeLeft()} of ${RULES.timeBudget()}`],['Traits',(S.traits||[]).map(t=>LEG.TRAITS[t].name).join(', ')||'—'],['Generation',S.gen]].concat(S.challenge?[['Challenge',`${(LEG.CHALLENGES.find(c=>c.id===S.challenge.id)||{name:'?'}).name}: ${S.challenge.status}`]]:[]).concat(S.flags.assisted?[['Achievements','Off for this life']]:[]);
+  richify($('.hero'));
   $('#side').innerHTML=`<h2>Life at a glance</h2><div class="glance">${rows.map(([k,v])=>`<div><span>${k}</span><span title="${esc(v)}">${esc(v)}</span></div>`).join('')}</div>`;
+  richify($('#side'));
   $('#tAge').disabled=!S.alive;
   $('#tAge').querySelector('b').textContent=S.alive?'+1':'RIP';
   $('#ageSmall').textContent=S.alive?'Age':'Ended';
   ['#tJob','#tAssets','#tPeople','#tDo'].forEach(s=>$(s).disabled=!S.alive);
 }
 
+
+/* ---------- display helpers: money markers, merged log lines, yearly summaries ---------- */
+const DOWN_WORDS=/(paid|pay |lost|lose|cost|spent|owed|owe |fine|tax|debt|stole|took |bill|fee|settle|repair|embezzl|scam|damag|bail|bribe|tuition|living costs)/i;
+const UP_WORDS=/(earned|won |gained|made|inherited|received|collected|brought in|refund|profit|paid me|gave me|sold|dividend|interest|bonus|prize|left me|cashed|worth)/i;
+function richify(root,log){if(!root)return;
+  root.querySelectorAll('[title]').forEach(el=>{const t=el.getAttribute('title');if(t&&t.includes(''))el.setAttribute('title',FMT.fullText(t))});
+  const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,{acceptNode:n=>n.nodeValue.includes('')?1:2});const nodes=[];while(w.nextNode())nodes.push(w.currentNode);
+  nodes.forEach(n=>{const txt=n.nodeValue,frag=document.createDocumentFragment();let last=0;const line=log&&n.parentElement.closest('.lines p');
+    txt.replace(FMT.RE,(m,a,val,off)=>{frag.append(txt.slice(last,off));const sp=document.createElement('span');sp.className='amt';sp.textContent=a;const isM=a.includes('$');sp.title=FMT.full(+val,isM);sp.dataset.full=sp.title;
+      if(line&&isM){const before=txt.slice(Math.max(0,off-60),off);const dir=+val<0?'down':line.classList.contains('bad')?'down':line.classList.contains('good')?'up':DOWN_WORDS.test(before)?'down':UP_WORDS.test(before)?'up':'';if(dir)sp.classList.add(dir)}
+      frag.append(sp);last=off+m.length;return m});
+    frag.append(txt.slice(last));n.replaceWith(frag)})}
+document.addEventListener('click',e=>{const a=e.target.closest&&e.target.closest('.amt');if(a&&!a.closest('button'))toast(a.dataset.full||a.title)});
+// Merge repeated lines in a year into one with a count and a total.
+function groupLines(lines){const out=[],idx={};
+  lines.forEach(l=>{const key=l.c+'|'+FMT.plain(l.t).replace(/-?\$?[\d.,]+[KMBT]?/g,'#');
+    if(idx[key]!=null){const g=out[idx[key]];g.n++;const am=FMT.firstAmount(l.t);if(am&&g.amt)g.amt.value+=am.value}
+    else{idx[key]=out.length;out.push({t:l.t,c:l.c,n:1,amt:FMT.firstAmount(l.t)})}});
+  out.forEach(g=>{if(g.n>1&&g.amt){g.t=g.t.replace(g.amt.text,g.amt.money?fmt(g.amt.value):fmtN(g.amt.value))}});
+  return out}
+const MAJOR=/died at age|was fired|laid off|promoted to|LOTTERY|inherited|went bankrupt|stock market crashed|slid into a recession|was diagnosed with|sentenced|became a (millionaire|multi-millionaire|billionaire)|Achievement unlocked|Challenge (complete|failed)|welcomed a baby|left me|was arrested|ascended|delisted|lost a lawsuit|has become a real enemy|championship|was elected|won the election|I won the|went public|was born/i;
+function yearSnap(){return{nw:netWorth(),cash:S.money,stats:{...S.stats}}}
+function diffSnap(a,b){const st={};['happy','health','smarts','looks'].forEach(k=>{const d=(b.stats[k]||0)-(a.stats[k]||0);if(d)st[k]=d});return{nw:Math.round(b.nw-a.nw),stats:st}}
+function liveSummary(){return S.ys?diffSnap(S.ys,yearSnap()):null}
+const ROUTINE=/^I (earned|paid)|Living costs|stocks and crypto|index fund|rental properties|property tax|in interest|made a profit|welcomed [\d.,KMB]+ visitors|had [\d.,KMB]+ visitors|unemployment support/i;
+function keyEvents(lines){return lines.filter(l=>!ROUTINE.test(FMT.plain(l.t))||MAJOR.test(FMT.plain(l.t))).map(l=>({l,s:(MAJOR.test(FMT.plain(l.t))?5:0)+(l.c?1:0)+Math.log10(Math.abs((FMT.firstAmount(l.t)||{value:1}).value)+1)/3})).filter(x=>x.s>=1).sort((a,b)=>b.s-a.s).slice(0,2).map(x=>x.l)}
+function summaryCard(sum,y,now){const ch=Object.entries(sum.stats||{});if(!sum.nw&&!ch.length)return'';const keys=keyEvents(y.lines);
+  return `<div class="ysum"><span class="k">${now?'This year so far':'Year in review'}</span><span>Net worth <span class="chg ${sum.nw>0?'up':sum.nw<0?'down':''}">${sum.nw>0?'+':''}${fmt(sum.nw)}</span></span>${ch.map(([k,d])=>`<span>${k[0].toUpperCase()+k.slice(1)} <span class="chg ${d>0?'up':'down'}">${d>0?'+':''}${d}</span></span>`).join('')}${keys.map(l=>`<span class="key">★ ${esc(l.t)}</span>`).join('')}</div>`}
+function floatChanges(a,b){const box=$('#floats');if(!box||!a)return;box.innerHTML='';const r=$('#tAge').getBoundingClientRect();box.style.left=(r.left+r.width/2)+'px';box.style.bottom=(innerHeight-r.top+6)+'px';const d=diffSnap(a,b);const items=[];
+  if(d.nw)items.push([`${d.nw>0?'+':''}${FMT.plain(fmt(d.nw))}`,d.nw>0?'up':'down']);
+  Object.entries(d.stats).forEach(([k,v])=>items.push([`${k[0].toUpperCase()+k.slice(1)} ${v>0?'+':''}${v}`,v>0?'up':'down']));
+  items.slice(0,5).forEach(([t,c],i)=>{const e=document.createElement('div');e.className='fl '+c;e.textContent=t;e.style.animationDelay=(i*0.12)+'s';box.appendChild(e)});
+  setTimeout(()=>{box.innerHTML=''},2600)}
+function menuSheet(){sheet('Menu',api=>{
+  api.item('God Mode',LEG.sandbox()?'Sandbox: unlimited':!LEG.godUnlocked()?`Locked: ${LEG.achCount()}/${LEG.GOD_UNLOCK} achievements`:S.flags.godUsed?'Already used in this life':'Once per life',null,()=>{close();$('#bGod').click()},false,['star','gold']);
+  api.item('Time Machine',LEG.rewindsLeft()===Infinity?'Sandbox: unlimited':`${LEG.rewindsLeft()} rewind${LEG.rewindsLeft()===1?'':'s'} left this life`,null,()=>{stack=[];timeMachine()},false,['clock','purple']);
+  api.item('New life','Start over with a new character',null,()=>{stack=[];newLifeMenu()},false,['plus','green']);
+  api.item('Challenge mode','Preset starts with a goal to beat',null,challengeMenu,false,['crown','gold']);
+  api.item('Achievements & settings',`${LEG.achCount()} of ${LEG.achTotal()} unlocked`,null,metaMenu,false,['star','gold']);
+});}
+
 let toastT;
-function toast(t){const el=$('#toast');el.textContent=t;el.hidden=false;el.style.animation='none';void el.offsetWidth;el.style.animation='';clearTimeout(toastT);toastT=setTimeout(()=>el.hidden=true,2600)}
+function toast(t){const el=$('#toast');el.textContent=t;richify(el);el.hidden=false;el.style.animation='none';void el.offsetWidth;el.style.animation='';clearTimeout(toastT);toastT=setTimeout(()=>el.hidden=true,2600)}
 
 /* ---------- sheets ---------- */
 const ov=$('#ov');
@@ -687,7 +779,7 @@ function draw(){
   const hd=document.createElement('div');hd.className='sheet-h';
   hd.innerHTML=`${stack.length>1&&!top.lock?'<button class="back" type="button" aria-label="Back">‹</button>':''}<h2>${esc(top.title)}</h2>${top.lock?'':'<button class="x" type="button" aria-label="Close">×</button>'}`;
   const grab=document.createElement('div');grab.className='grab';
-  wrap.append(grab,hd,body);ov.innerHTML='';ov.appendChild(wrap);ov.hidden=false;ov.classList.toggle('center',!!top.event);
+  wrap.append(grab,hd,body);richify(wrap);ov.innerHTML='';ov.appendChild(wrap);ov.hidden=false;ov.classList.toggle('center',!!top.event);
   ov.dataset.key=String(stack.length)+top.title;body.scrollTop=keep;
   const bk=hd.querySelector('.back');if(bk)bk.onclick=()=>{stack.pop();draw()};
   const x=hd.querySelector('.x');if(x)x.onclick=close;
@@ -748,6 +840,8 @@ function act(label,fn,mode){
 /* ---------- age up ---------- */
 function ageUp(){
   if(!S.alive||queue.length)return;
+  const t0=yearSnap();if(S.ys)S.log[S.log.length-1].sum=diffSnap(S.ys,t0);S.ys=t0;
+  {const ab=$('#tAge');ab.classList.remove('pulse');void ab.offsetWidth;ab.classList.add('pulse')}
   S.age++;S.acts={};
   S.log.push({age:S.age,lines:[]});
   S.people.forEach(p=>{if(p.alive){p.age++;p.bond=clamp(p.bond-R(0,3))}});
@@ -778,7 +872,8 @@ function ageUp(){
   deathCheck();
   if(S.alive){if(S.jail===0)rollEvents();else if(C(.25)&&(S.age-(S.seen.yard||-9)>=3)){S.seen.yard=S.age;prisonEvent()}}
   if(S.alive)snap();
-  render();save();
+  if(S.alive){const big=S.log[S.log.length-1].lines.filter(l=>MAJOR.test(FMT.plain(l.t)));if(big.length)popup('Big news',`<ul class="bignews">${big.slice(0,6).map(l=>`<li class="${l.c}">${esc(l.t)}</li>`).join('')}</ul>`,[['Continue',null]])}
+  render();save();floatChanges(t0,yearSnap());
   if(!queue.length&&S.alive)close();
 }
 function milestones(){
@@ -1608,7 +1703,7 @@ function spMenu(){if(!S.sp){specialMenu();return}sheet('My career',api=>{
       const chart=q+S.fame*(s.label?1.2:0.8)+R(-15,15);S.fame=clamp(S.fame+Math.round(q/40)+(chart>110?2:0)+(chart>140?3:0));
       if(chart>140){s.hits++;L(`My single ${title} hit #1 on the charts! It earned ${fmt(pay)}.`,'good');st('happy',12)}
       else if(chart>110){s.hits++;L(`My single ${title} cracked the top 10 and earned ${fmt(pay)}.`,'good')}
-      else L(`I released ${title}. It got ${streams.toLocaleString()} streams and earned ${fmt(pay)}.`,q<40?'bad':'')}),false,['music','purple']);
+      else L(`I released ${title}. It got ${fmtN(streams)} streams and earned ${fmt(pay)}.`,q<40?'bad':'')}),false,['music','purple']);
     api.item('Release an album','Needs 4 singles since your last album',null,act('',()=>{if(!limit('album',1,'One album a year.'))return;s.lastAlbumSongs=s.songs;s.active=1;const q=clamp(s.skill+R(-15,15));const sales=Math.round(q*(S.fame+5)*(s.label?2.5:1)*R(40,120));ECO.earn(sales);S.fame=clamp(S.fame+Math.round(q/20));s.albums++;s.sinceAlbum=0;s.catalog+=Math.round(q/4);
       if(q>80&&S.fame>40&&C(.35)){L(`My album won a Silver Record Award!`,'good');st('happy',15)}L(`I released album #${s.albums}. It sold ${fmt(sales)} worth.`,'good')}),(s.songs-(s.lastAlbumSongs||0))<4,['music','purple']);
     api.item('Go on tour','Needs fame of 20%+. Tiring but lucrative.',null,act('',()=>{if(!limit('tour',1,'One tour a year.'))return;s.active=1;const rev=Math.round(S.fame*S.fame*R(80,220));ECO.earn(rev);st('health',-4);st('happy',5);S.fame=clamp(S.fame+3);L(`I went on a ${S.fame>70?'world':S.fame>40?'national':'regional'} tour and grossed ${fmt(rev)}.`,'good')}),S.fame<20,['globe','teal']);
@@ -2276,7 +2371,7 @@ SPX.cult={
    s.scrutiny=clamp(s.scrutiny+Math.round(s.followers/400)+R(-3,3));
    if(s.scrutiny>70&&C(.35))popup('Investigation','Federal investigators are looking into your movement’s finances.',[['Cooperate fully',()=>{s.scrutiny=clamp(s.scrutiny-35);s.followers=Math.round(s.followers*0.8);L('I cooperated with investigators. Some followers left.')}],['Flee the country',()=>{S.country=P(COUNTRIES.filter(c=>c!==S.country));spEnd(`I fled to ${S.country} and abandoned the movement.`,'bad')}],['Fight it in court ($200,000)',()=>{if(S.money>=200e3)S.money-=200e3;if(C(.5)){s.scrutiny=20;L('My lawyers got the investigation dropped.','good')}else{spEnd();arrest('I was convicted of fraud.',R(2,10))}}]])},
  menu:(api,s)=>{
-   api.html(`<div class="kv"><span>Movement</span><span>${esc(s.name)}</span><span>Followers</span><span>${s.followers.toLocaleString()}</span><span>Devotion</span><span>${s.devotion}%</span><span>Public scrutiny</span><span>${s.scrutiny}%</span><span>Commune</span><span>${s.commune?'Built':'None'}</span></div>`);
+   api.html(`<div class="kv"><span>Movement</span><span>${esc(s.name)}</span><span>Followers</span><span>${fmtN(s.followers)}</span><span>Devotion</span><span>${s.devotion}%</span><span>Public scrutiny</span><span>${s.scrutiny}%</span><span>Commune</span><span>${s.commune?'Built':'None'}</span></div>`);
    api.item('Recruit on the street','Hand out pamphlets',null,act('',()=>{if(!limit('rec',2,'Your voice is hoarse. Recruit again next year.'))return;const n=Math.round(R(1,8)*(1+S.fame/40+S.stats.looks/100));s.followers+=n;L(`I recruited ${n} new follower${n>1?'s':''}.`)}),false,['users','purple']);
    api.item('Post recruitment videos online','Reach thousands, attract attention',null,act('',()=>{if(!limit('vid',1,'You have posted enough this year.'))return;const n=R(5,60)+Math.round(S.followers/2000);s.followers+=n;s.scrutiny=clamp(s.scrutiny+3);S.followers+=n*20;L(`My videos brought in ${n} new followers.`)}),false,['camera','pink']);
    api.item('Hold a gathering','Songs, speeches, candles',null,act('',()=>{if(!limit('gather',2,'Your followers need rest.'))return;s.devotion=clamp(s.devotion+R(4,9));L('I held a moving gathering for my followers.','good')}),false,['star','gold']);
@@ -2293,7 +2388,7 @@ const zooCount=z=>Object.values(z.animals).reduce((a,b)=>a+b,0);
 function zooMenu(){if(!S.zoo){sheet('Open a zoo',api=>{api.sub('Land, enclosures, permits and a front gate cost about $2,000,000. Then you collect animals, hire keepers and sell tickets.');
   api.item('Open your zoo','',fmt(2e6),act('',()=>{if(!spend(2e6))return;S.zoo={name:`${S.last} Wildlife Park`,animals:{},keepers:1,rating:55,price:'standard',ups:{}};L(`I opened ${S.zoo.name}!`,'good');st('happy',10)},'back'),S.money<2e6,['paw','green'])});return}
   sheet(S.zoo.name,api=>{const z=S.zoo;if(!z){api.sub('You no longer own a zoo.');return}const n=zooCount(z),need=Math.max(1,Math.ceil(n/6));
-    api.html(`<div class="kv"><span>Animals</span><span>${n} (${Object.keys(z.animals).length} species)</span><span>Keepers</span><span>${z.keepers} (need ${need})</span><span>Visitor rating</span><span>${z.rating}%</span><span>Tickets</span><span>${z.price}</span>${z.last?`<span>Visitors last year</span><span>${z.last.v.toLocaleString()}</span><span>Profit last year</span><span>${fmt(z.last.p)}</span>`:''}</div>`);
+    api.html(`<div class="kv"><span>Animals</span><span>${n} (${Object.keys(z.animals).length} species)</span><span>Keepers</span><span>${z.keepers} (need ${need})</span><span>Visitor rating</span><span>${z.rating}%</span><span>Tickets</span><span>${z.price}</span>${z.last?`<span>Visitors last year</span><span>${fmtN(z.last.v)}</span><span>Profit last year</span><span>${fmt(z.last.p)}</span>`:''}</div>`);
     if(n){api.sec('Your animals');Object.entries(z.animals).forEach(([sp,c])=>api.item(`${sp} ×${c}`,'Sell one to another zoo for 70%',fmt(Math.round(SPECIES.find(x=>x[0]===sp)[1]*0.7)),act('',()=>{z.animals[sp]--;if(!z.animals[sp])delete z.animals[sp];S.money+=Math.round(SPECIES.find(x=>x[0]===sp)[1]*0.7);L(`I sold a ${lc(sp)} to another zoo.`)}),false,['paw','orange']))}
     api.sec('Grow the zoo');
     api.item('Buy animals',`${SPECIES.length} species available`,null,()=>sheet('Animal dealers',a=>{a.sub(`You have ${fmt(S.money)}. Popular animals draw more visitors. Dangerous ones need enough keepers.`);
@@ -2314,14 +2409,14 @@ function zooYear(){const z=S.zoo;if(!z)return;const n=zooCount(z),need=Math.max(
   const v=Math.round(Math.pow(Math.max(draw,1),0.8)*520*(z.rating/60)*pf*upM*(0.85+Math.random()*0.3));
   const p=v*tk+v*6-upkeep-z.keepers*45e3-150e3;S.money+=p>0?Math.round(p*(1-ECO.corporateRate())):p;z.last={v,p};
   z.rating=clamp(z.rating+(z.keepers>=need?1:-6)+(z.price==='cheap'?1:z.price==='premium'?-1:0)+R(-3,3));
-  L(`${z.name} welcomed ${v.toLocaleString()} visitors and ${p>=0?'made':'lost'} ${fmt(Math.abs(p))}.`,p>=0?'good':'bad');
+  L(`${z.name} welcomed ${fmtN(v)} visitors and ${p>=0?'made':'lost'} ${fmt(Math.abs(p))}.`,p>=0?'good':'bad');
   if(danger&&z.keepers<need&&C(.2)){z.rating=clamp(z.rating-15);S.money-=100e3;L(`A dangerous animal escaped from ${z.name}. The fines cost $100,000.`,'bad')}}
 /* ---------- museum ---------- */
 const museumItems=()=>S.assets.filter(a=>['art','collect','classic','jewel','watch'].includes(a.type));
 function museumMenu(){if(!S.museum){sheet('Open a museum',api=>{api.sub('Buy and fit out a building for about $1,000,000. Then display your art, collectibles and classic cars, and sell tickets.');
   api.item('Open your museum','',fmt(1e6),act('',()=>{if(!spend(1e6))return;S.museum={name:`The ${S.last} Collection`,rating:55,security:0};L(`I opened ${S.museum.name}, a private museum.`,'good')},'back'),S.money<1e6,['book','purple'])});return}
   sheet(S.museum.name,api=>{const m=S.museum;if(!m){api.sub('You no longer own a museum.');return}const shown=museumItems().filter(a=>a.displayed);const val=shown.reduce((a,x)=>a+x.value,0);
-    api.html(`<div class="kv"><span>Pieces on display</span><span>${shown.length}</span><span>Value on display</span><span>${fmt(val)}</span><span>Visitor rating</span><span>${m.rating}%</span><span>Security</span><span>${m.security?'Upgraded':'Basic'}</span>${m.last?`<span>Visitors last year</span><span>${m.last.v.toLocaleString()}</span><span>Profit last year</span><span>${fmt(m.last.p)}</span>`:''}</div>`);
+    api.html(`<div class="kv"><span>Pieces on display</span><span>${shown.length}</span><span>Value on display</span><span>${fmt(val)}</span><span>Visitor rating</span><span>${m.rating}%</span><span>Security</span><span>${m.security?'Upgraded':'Basic'}</span>${m.last?`<span>Visitors last year</span><span>${fmtN(m.last.v)}</span><span>Profit last year</span><span>${fmt(m.last.p)}</span>`:''}</div>`);
     api.sec('Your collection');const items=museumItems();if(!items.length)api.sub('You have nothing to display yet. Buy art, collectibles or classic cars at the gallery, auction house or black market.');
     items.forEach(a=>api.item(esc(a.name)+(a.displayed?' <span class="pill">On display</span>':''),a.displayed?'Tap to put in storage':'Tap to display',fmt(a.value),act('',()=>{a.displayed=!a.displayed;L(a.displayed?`I put ${lc(a.name)} on display.`:`I moved ${lc(a.name)} into storage.`)}),false,['brush','purple']));
     api.sec('Running the museum');
@@ -2332,7 +2427,7 @@ function museumMenu(){if(!S.museum){sheet('Open a museum',api=>{api.sub('Buy and
   });}
 function museumYear(){const m=S.museum;if(!m)return;const shown=museumItems().filter(a=>a.displayed);const val=shown.reduce((a,x)=>a+x.value,0);
   const v=Math.round(Math.sqrt(val)*R(8,14)*(m.rating/60)*(m.special===S.age-1?1.4:1));const p=v*24-120e3-Math.round(val*0.01);S.money+=p>0?Math.round(p*(1-ECO.corporateRate())):p;m.last={v,p};m.rating=clamp(m.rating+R(-3,3));
-  L(`${m.name} had ${v.toLocaleString()} visitors and ${p>=0?'made':'lost'} ${fmt(Math.abs(p))}.`,p>=0?'good':'bad');
+  L(`${m.name} had ${fmtN(v)} visitors and ${p>=0?'made':'lost'} ${fmt(Math.abs(p))}.`,p>=0?'good':'bad');
   if(shown.length&&!m.security&&C(.05)){const a=P(shown);S.assets=S.assets.filter(x=>x!==a);L(`Thieves broke into ${m.name} and stole ${lc(a.name)}!`,'bad')}}
 /* ---------- black market ---------- */
 const CONTRABAND=[['Smuggled ancient statue','collect',200e3,1e6,.35],['A painting stolen decades ago','art',500e3,5e6,.25],['Fossil dug up without permits','collect',100e3,600e3,.4],['Unregistered gold bars','collect',100e3,400e3,.6],['Meteorite from a protected site','collect',50e3,300e3,.45],['Looted temple mask','collect',150e3,900e3,.3],['Smuggled rare-earth coins','collect',30e3,200e3,.4],['Lost royal crown jewel','jewel',400e3,3e6,.3]];
@@ -2476,7 +2571,7 @@ function actMenu(){sheet('Activities',api=>{
   if(adult){api.item('Buy a lottery ticket','$10',null,act('',()=>{if(!spend(10))return;const r=Math.random();if(r<0.0004){S.money+=25e6;L('I WON THE LOTTERY JACKPOT: $25,000,000!','good');st('happy',40)}else if(r<0.02){S.money+=1000;L('I won $1,000 on a lottery ticket.','good')}else if(r<0.12){S.money+=20;L('I won $20 on a scratch ticket.')}else L('My lottery ticket was a dud.')}));
     api.item('Casino','Blackjack table',null,casino)}
   api.sec('Social');
-  if(a>=13)api.item('Social media',`${S.followers.toLocaleString()} followers · fame ${S.fame}`,null,social);
+  if(a>=13)api.item('Social media',`${fmtN(S.followers)} followers · fame ${S.fame}`,null,social);
   if(S.royal)api.item('Royal life',`Public approval ${S.royal.pop}%`,null,royalMenu);
   if(a>=10)api.item('Adopt a pet','',null,()=>sheet('Pet shelter',x=>PETS.forEach(([k,c])=>x.item(k[0].toUpperCase()+k.slice(1),'',fmt(c),act('',()=>{if(!spend(c))return;const n=P(PETNAMES);S.pets.push({id:uid(),kind:k,name:n,age:R(0,3),alive:true,bond:70});L(`I adopted a ${k} named ${n}.`,'good');st('happy',8)}),S.money<c&&a>=18))));
   if(adult)api.item('Emigrate','Move to a new country · $5,000',null,()=>sheet('Emigrate',x=>COUNTRIES.filter(c=>c!==S.country).forEach(c=>x.item(c,'',null,act('',()=>{if(!spend(5000))return;S.country=c;L(`I moved to ${c}.`,'good')})))));
@@ -2498,13 +2593,13 @@ function casino(){sheet('Blackjack',api=>{api.sub(`You have ${fmt(S.money)}. The
     else{S.money-=b;res=`You had ${you}, dealer had ${deal}. You lost ${fmt(b)}.`}
     L('Casino: '+res.replace('You','I').replace('You','I'));note('Blackjack',res);},S.money<b))});}
 function social(){sheet('Social media',api=>{
-  api.html(`<div class="kv"><span>Followers</span><span>${S.followers.toLocaleString()}</span><span>Fame</span><span>${S.fame}%</span></div>`);
+  api.html(`<div class="kv"><span>Followers</span><span>${fmtN(S.followers)}</span><span>Fame</span><span>${S.fame}%</span></div>`);
   [['Post a selfie','looks'],['Post a hot take','smarts'],['Post a funny video','happy'],['Go live','fame']].forEach(([t,k])=>api.item(t,'',null,act('',()=>{
     if(!limit('posts',4,'You have posted enough this year.'))return;
     const base=(k==='fame'?S.fame:S.stats[k])+S.fame;const viral=C(0.03+S.fame/500);
     let g=Math.round((base*R(2,15)+S.followers*R(1,6)/100)*(viral?40:1));if(C(.12)){g=-Math.round(S.followers*0.05);}
     S.followers=Math.max(0,S.followers+g);if(viral)S.fame=clamp(S.fame+R(5,15));else if(S.followers>100000)S.fame=clamp(S.fame+1);
-    L(viral?`My post went viral! I gained ${g.toLocaleString()} followers.`:g>=0?`I posted online and gained ${g.toLocaleString()} followers.`:`My post flopped and I lost ${(-g).toLocaleString()} followers.`,viral?'good':g<0?'bad':'')})));
+    L(viral?`My post went viral! I gained ${fmtN(g)} followers.`:g>=0?`I posted online and gained ${g.toLocaleString()} followers.`:`My post flopped and I lost ${fmtN(-g)} followers.`,viral?'good':g<0?'bad':'')})));
 });}
 function royalMenu(){sheet('Royal life',api=>{const r=S.royal;
   api.html(`<p class="sub">${r.monarch?`${he()?'King':'Queen'} of ${esc(S.country)}`:`${r.title} of ${esc(S.country)}`} · public approval ${r.pop}%</p>`);
@@ -2622,8 +2717,7 @@ $('#bGod').onclick=()=>{stack=[];if(!S.alive){note('God Mode','This life has end
   if(!LEG.godUnlocked()){note('God Mode is locked',`Unlock God Mode by earning ${LEG.GOD_UNLOCK} achievements (you have ${LEG.achCount()}), or turn on sandbox mode in Achievements & settings.`);return}
   if(LEG.sandbox()||S.flags.godUsed){if(!LEG.sandbox()&&S.flags.godUsed){toast('You have already used God Mode in this life.');return}godMode();return}
   popup('Use God Mode?','You can use God Mode once per life. This life will then be marked as assisted and can no longer earn achievements.',[['Use it',()=>{LEG.useGod();then(godMode)}],['Not now',null]])};
-$('#bTime').onclick=()=>{stack=[];timeMachine()};
-$('#bNew').onclick=()=>{stack=[];newLifeMenu()};
+$('#bMenu').onclick=()=>{stack=[];menuSheet()};
 document.addEventListener('keydown',e=>{if(e.key===' '&&ov.hidden&&document.activeElement===document.body&&S&&S.alive){e.preventDefault();ageUp()}});
 
 if(!load())newLife();else{render();if(!S.alive)deathScreen()}

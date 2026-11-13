@@ -146,8 +146,8 @@ const LEG = (() => {
   function observe(t, c) {
     if (!S || !S.log) return;
     const T = S.tally || (S.tally = {});
-    let m;
-    if ((m = t.match(/I (?:donated|pledged|gave) \$([\d,]+)/))) T.donated = (T.donated || 0) + +m[1].replace(/,/g, '');
+    let m; const ft = typeof FMT !== 'undefined' ? FMT.fullText(t) : t;
+    if ((m = ft.match(/I (?:donated|pledged|gave) \$([\d,]+)/))) T.donated = (T.donated || 0) + +m[1].replace(/,/g, '');
     if (/high-stakes|roulette|slot machines|poker|blackjack|horse race|sports match|scratch cards|lottery ticket|Casino:/i.test(t)) T.bets = (T.bets || 0) + 1;
     if (/street race|skydiv|bungee|tallest|heist|robbery|wilderness|rafting|marathon|dare|pulled off|stunt|ghost|treasure|alchemy|bear/i.test(t)) T.risks = (T.risks || 0) + 1;
     if (/started dating|began courting|married|eloped/i.test(t)) T.partners = (T.partners || 0) + (/married|eloped/i.test(t) ? 0 : 1);
