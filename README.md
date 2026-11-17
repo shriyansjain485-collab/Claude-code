@@ -22,6 +22,7 @@ Day to day:
 |---|---|
 | Write a post | `/write-post personal linkedin <idea>` |
 | Turn a talk/blog/podcast into posts | `/repurpose <link or file>` |
+| Clip a live stream or video's best moments | `/clip personal <stream url>` (see `clipbot/README.md`) |
 | Reply to comments or DMs | `/engage company <paste comments>` |
 | See what's working | `/weekly-review` |
 | Rethink positioning | "Ask the brand-strategist to..." |
@@ -33,6 +34,7 @@ CLAUDE.md               rules every agent follows
 brand/                  personal.md and company.md: voice, audience, pillars
 .claude/agents/         brand-strategist, content-creator, community-manager, analytics-reviewer
 .claude/skills/         the slash-command workflows above
+clipbot/                live-stream & video clipper (python -m clipbot live|vod <url>)
 content/calendar.md     the plan
 content/ideas → drafts → approved → published
 content/engagement/     daily reply drafts and engagement lists

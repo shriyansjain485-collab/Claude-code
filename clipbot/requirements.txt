@@ -1,0 +1,2 @@
+yt-dlp>=2025.1.1
+streamlink>=7.0  # optional: lowest-latency live reading; yt-dlp is used if missing

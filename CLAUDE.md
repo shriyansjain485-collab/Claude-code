@@ -73,6 +73,7 @@ visual: none | <description or Canva link>
 | `/write-post` | Draft a post for a given brand + platform + idea |
 | `/reel` | Make an Instagram Reel, a batch of reel ideas, or a 30-day reel growth plan |
 | `/repurpose` | Turn one piece (talk, blog, post, podcast) into many |
+| `/clip` | Clip top moments of a live stream or video with `clipbot/`, then draft shorts from them |
 | `/engage` | Draft replies to comments/DMs and a daily engagement list |
 | `/weekly-review` | Summarise performance and set next week's focus |
 
