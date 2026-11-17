@@ -76,7 +76,9 @@ python -m clipbot hunt "chess"
 | `--min-viewers 200` | only bigger streams (default 20) |
 | `--only NAME` | only clip these channels (repeat it). Use this for creators who've given permission. |
 | `--exclude NAME` | never clip this channel |
-| `--language en` | Twitch streams in this language only |
+| `--also "GTA 6 hindi"` | extra search phrases (repeat it); the best way to find streams in other languages on YouTube |
+| `--language en,hi` | Twitch streams in these languages only |
+| `--start-at "2026-11-18 23:45"` | wait until this local time, e.g. a game launch |
 | `--top-per-stream 5` | best clips kept from each stream |
 | `--sites twitch` | search one site only |
 

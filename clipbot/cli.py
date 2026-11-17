@@ -61,7 +61,12 @@ def build_parser() -> argparse.ArgumentParser:
     hunt.add_argument("--sites", default="youtube,twitch", help="where to search (default youtube,twitch)")
     hunt.add_argument("--max-streams", type=int, default=3, help="streams clipped at the same time (default 3)")
     hunt.add_argument("--min-viewers", type=int, default=20, help="skip streams with fewer viewers (default 20)")
-    hunt.add_argument("--language", help="only streams in this language code, e.g. en (Twitch reports it)")
+    hunt.add_argument("--also", action="append", metavar="QUERY",
+                      help='extra search phrase (repeat), e.g. --also "GTA 6 hindi"')
+    hunt.add_argument("--language", help="only streams in these languages, e.g. en,hi (Twitch reports it; "
+                                         "YouTube doesn't, so steer YouTube with --also queries)")
+    hunt.add_argument("--start-at", metavar="'YYYY-MM-DD HH:MM'",
+                      help="wait until this local time before hunting (e.g. a game's launch)")
     hunt.add_argument("--only", action="append", metavar="CHANNEL",
                       help="only clip these channels (repeat; use for creators who allowed clipping)")
     hunt.add_argument("--exclude", action="append", metavar="CHANNEL", help="never clip this channel (repeat)")

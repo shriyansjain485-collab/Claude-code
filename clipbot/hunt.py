@@ -22,6 +22,8 @@ def clip_hunt(args) -> None:
     sites = [s.strip().lower() for s in args.sites.split(",") if s.strip()]
     only = {c.lower() for c in (args.only or [])}
     exclude = {c.lower() for c in (args.exclude or [])}
+    languages = {l.strip().lower() for l in (args.language or "").split(",") if l.strip()}
+    queries = [topic, *(args.also or [])]
 
     running: dict[str, tuple[subprocess.Popen, discover.LiveStream]] = {}
     failures: dict[str, int] = {}
@@ -32,7 +34,20 @@ def clip_hunt(args) -> None:
         raise KeyboardInterrupt
     signal.signal(signal.SIGTERM, on_term)
 
-    print(f"● Hunting live streams about “{topic}” on {', '.join(sites)}\n"
+    if args.start_at:
+        start = datetime.strptime(args.start_at, "%Y-%m-%d %H:%M")
+        wait = (start - datetime.now()).total_seconds()
+        if wait > 0:
+            print(f"◷ Waiting until {start:%a %d %b %H:%M} to start hunting (Ctrl+C to cancel)…", flush=True)
+            try:
+                while (start - datetime.now()).total_seconds() > 0:
+                    time.sleep(min(30, max(1, (start - datetime.now()).total_seconds())))
+            except KeyboardInterrupt:
+                print("\n■ Cancelled before start.")
+                return
+
+    print(f"● Hunting live streams about {' / '.join(repr(q) for q in queries)} on {', '.join(sites)}"
+          f"{' · languages ' + ','.join(sorted(languages)) if languages else ''}\n"
           f"  up to {args.max_streams} at once · rescan every {args.rescan}s · ready clips → {root}/READY.md\n"
           f"  Ctrl+C to stop", flush=True)
     try:
@@ -47,13 +62,17 @@ def clip_hunt(args) -> None:
 
             if time.time() >= next_scan:
                 next_scan = time.time() + args.rescan
-                found = discover.find_live(topic, sites, limit=args.search_limit, extra=args.ytdlp_arg)
+                by_key: dict[str, discover.LiveStream] = {}
+                for query in queries:
+                    for s in discover.find_live(query, sites, limit=args.search_limit, extra=args.ytdlp_arg):
+                        by_key.setdefault(s.key, s)
+                found = sorted(by_key.values(), key=lambda s: -s.viewers)
                 candidates = [s for s in found
                               if s.key not in running and failures.get(s.key, 0) < 3
                               and s.viewers >= args.min_viewers
                               and (not only or s.channel.lower() in only)
                               and s.channel.lower() not in exclude
-                              and (not args.language or not s.language or s.language == args.language)]
+                              and (not languages or not s.language or s.language.lower() in languages)]
                 print(f"  ⌕ {datetime.now():%H:%M} found {len(found)} live, "
                       f"{len(candidates)} new eligible, watching {len(running)}", flush=True)
                 for stream in candidates[: max(0, args.max_streams - len(running))]:
@@ -90,7 +109,7 @@ def start_clipper(stream: discover.LiveStream, root: Path, logs: Path, args) -> 
     cmd = [sys.executable, "-m", "clipbot", "live", stream.url, "--out", str(root), "--name", name,
            "--top", str(args.top_per_stream), "--threshold", str(args.threshold),
            "--quality", args.quality, "--pre", str(args.pre), "--post", str(args.post),
-           "--warmup", str(args.warmup)]
+           "--warmup", str(args.warmup), "--workers", "1"]
     if args.vertical:
         cmd.append("--vertical")
     for extra in args.ytdlp_arg or []:
