@@ -31,7 +31,8 @@ class LiveClipper:
         stamp = datetime.now().strftime("%Y-%m-%d_%H%M")
         base = channel or sources.slug(Path(args.source).stem if not sources.is_url(args.source)
                                        else args.source.split("://", 1)[-1])
-        self.out_dir = Path(args.out) / f"{sources.slug(base)}_{stamp}"
+        name = getattr(args, "name", None)
+        self.out_dir = Path(args.out) / (sources.slug(name) if name else f"{sources.slug(base)}_{stamp}")
         self.buf_dir = self.out_dir / ".buffer"
         self.buf_dir.mkdir(parents=True, exist_ok=True)
         self.chat = TwitchChat(channel) if channel and not args.no_chat else None
@@ -44,6 +45,11 @@ class LiveClipper:
         self.cooldown_until = 0.0
         self.pending: list[dict] = []
         self.clips: list[dict] = []
+        try:  # resuming into an existing folder (e.g. hunt mode re-finding a stream)
+            previous = json.loads((self.out_dir / "manifest.json").read_text())["clips"]
+            self.clips = [c for c in previous if Path(c["file"]).exists()]
+        except (OSError, ValueError, KeyError):
+            pass
         self.deleted: set[str] = set()
         self.lock = threading.Lock()
         self.pool = ThreadPoolExecutor(max_workers=args.workers)
@@ -129,7 +135,8 @@ class LiveClipper:
                 self.pool.submit(self.cut, p, needed)
 
     def cut(self, p: dict, needed: list[tuple[Path, float, float]]) -> None:
-        name = f"{scoring.hms(p['moment']).replace(':', '-')}_{p['kind']}_score{p['score']:.1f}.mp4"
+        name = (f"{datetime.now():%m%d-%H%M%S}_{scoring.hms(p['moment']).replace(':', '-')}"
+                f"_{p['kind']}_score{p['score']:.1f}.mp4")
         out = self.out_dir / name
         began = time.time()
         try:

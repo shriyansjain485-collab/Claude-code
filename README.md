@@ -34,7 +34,7 @@ CLAUDE.md               rules every agent follows
 brand/                  personal.md and company.md: voice, audience, pillars
 .claude/agents/         brand-strategist, content-creator, community-manager, analytics-reviewer
 .claude/skills/         the slash-command workflows above
-clipbot/                live-stream & video clipper (python -m clipbot live|vod <url>)
+clipbot/                stream clipper (python -m clipbot live|vod <url>, or hunt "<topic>")
 content/calendar.md     the plan
 content/ideas → drafts → approved → published
 content/engagement/     daily reply drafts and engagement lists

@@ -1,7 +1,8 @@
 # clipbot
 
 Clips the best moments of **live streams** while they're happening, and the top
-moments of **finished streams and videos**, as fast as possible.
+moments of **finished streams and videos**, as fast as possible. It can also
+**find live streams on a topic by itself** and keep the best clips ready.
 
 Only clip streams and videos you own or have permission to use (your own
 channel, a creator who has agreed, a podcast you appeared on). Reposting other
@@ -54,6 +55,53 @@ Useful options:
 Works with Twitch, YouTube Live, Kick and anything else streamlink or yt-dlp can
 read. It also takes a direct `rtmp://`, `srt://` or `.m3u8` feed, such as your
 own OBS output, and plays a local file back in real time for testing.
+
+## Hunt: find live streams on a topic and keep clips ready
+
+```bash
+python -m clipbot hunt "chess"
+```
+
+- Searches **YouTube Live** and **Twitch** for streams about the topic every 5
+  minutes. On Twitch it matches stream titles and the category ("Chess",
+  "Fortnite", "Just Chatting"…).
+- Clips the 3 biggest streams at the same time, using the live mode above. When a
+  stream ends, it moves on to the next one.
+- Keeps a ranked board of the best clips from every stream in
+  `clips/<topic>/READY.md` (and `ready.json`), updated as clips are made.
+
+| Option | What it does |
+|---|---|
+| `--max-streams 5` | watch more streams at once (each one uses about 2–3 Mbps of download at 720p) |
+| `--min-viewers 200` | only bigger streams (default 20) |
+| `--only NAME` | only clip these channels (repeat it). Use this for creators who've given permission. |
+| `--exclude NAME` | never clip this channel |
+| `--language en` | Twitch streams in this language only |
+| `--top-per-stream 5` | best clips kept from each stream |
+| `--sites twitch` | search one site only |
+
+**Twitch setup (one time, free):** create an app at
+[dev.twitch.tv/console](https://dev.twitch.tv/console). Use any name, set the
+redirect URL to `http://localhost`, and pick category "Application
+Integration". Then:
+
+```bash
+export TWITCH_CLIENT_ID=your_client_id
+export TWITCH_CLIENT_SECRET=your_client_secret
+```
+
+Without these, hunt searches YouTube only. Kick has no public search API, so
+add Kick streams by hand with `live`.
+
+To keep it running in the background on a Mac or Linux machine:
+
+```bash
+nohup python -m clipbot hunt "chess" > hunt.log 2>&1 &
+```
+
+Clipping someone else's stream doesn't give you the right to repost it. Many
+streamers welcome clippers, and some run clipping programs, but check before
+you post. `--only` keeps the bot to channels you've cleared.
 
 ## VOD / video: find the top moments of something already recorded
 

@@ -2,6 +2,7 @@
 
   python -m clipbot live  <stream url | rtmp/srt/m3u8 | file>
   python -m clipbot vod   <video url | file>
+  python -m clipbot hunt  "<topic>"      find live streams on a topic and clip them
 """
 
 from __future__ import annotations
@@ -53,6 +54,29 @@ def build_parser() -> argparse.ArgumentParser:
     live.add_argument("--on-clip", metavar="CMD",
                       help="command run for each new clip; {file} is replaced with its path")
     live.add_argument("--keep-buffer", action="store_true", help="keep the rolling buffer when the bot stops")
+    live.add_argument("--name", help="fixed output folder name inside --out (default: <channel>_<date>)")
+
+    hunt = sub.add_parser("hunt", help="find live streams about a topic and keep the best clips ready")
+    hunt.add_argument("topic", help='what to look for, e.g. "fortnite", "startup pitch", "chess"')
+    hunt.add_argument("--sites", default="youtube,twitch", help="where to search (default youtube,twitch)")
+    hunt.add_argument("--max-streams", type=int, default=3, help="streams clipped at the same time (default 3)")
+    hunt.add_argument("--min-viewers", type=int, default=20, help="skip streams with fewer viewers (default 20)")
+    hunt.add_argument("--language", help="only streams in this language code, e.g. en (Twitch reports it)")
+    hunt.add_argument("--only", action="append", metavar="CHANNEL",
+                      help="only clip these channels (repeat; use for creators who allowed clipping)")
+    hunt.add_argument("--exclude", action="append", metavar="CHANNEL", help="never clip this channel (repeat)")
+    hunt.add_argument("--rescan", type=int, default=300, help="seconds between searches for new streams (default 300)")
+    hunt.add_argument("--search-limit", type=int, default=20, help="results checked per site per search (default 20)")
+    hunt.add_argument("--top-per-stream", type=int, default=5, help="best clips kept per stream (default 5)")
+    hunt.add_argument("--board-size", type=int, default=25, help="clips listed in READY.md (default 25)")
+    hunt.add_argument("--threshold", type=float, default=2.5, help="hype score that triggers a clip (default 2.5)")
+    hunt.add_argument("--warmup", type=int, default=60, help="seconds to learn each stream's normal level (default 60)")
+    hunt.add_argument("--quality", default="720p", help="recording quality per stream (default 720p)")
+    hunt.add_argument("--pre", type=float, default=20, help="seconds kept before the peak (default 20)")
+    hunt.add_argument("--post", type=float, default=10, help="seconds kept after the peak (default 10)")
+    hunt.add_argument("--vertical", action="store_true", help="export 1080x1920 clips (uses much more CPU)")
+    hunt.add_argument("--out", default="clips", help="output folder (default: clips/)")
+    hunt.add_argument("--ytdlp-arg", action="append", metavar="ARG", help="extra argument passed to yt-dlp/streamlink")
     return p
 
 
@@ -62,6 +86,9 @@ def main(argv: list[str] | None = None) -> None:
         if args.mode == "vod":
             from .vod import clip_vod
             clip_vod(args)
+        elif args.mode == "hunt":
+            from .hunt import clip_hunt
+            clip_hunt(args)
         else:
             from .live import clip_live
             clip_live(args)

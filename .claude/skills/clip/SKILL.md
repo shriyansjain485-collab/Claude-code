@@ -1,7 +1,7 @@
 ---
 name: clip
-description: Clip the top moments of a live stream (while it's live) or a finished stream/video with clipbot, then turn the best clips into short-form post drafts for the personal or company brand. Use when the owner asks to clip a stream, find highlights, or make shorts from a video.
-argument-hint: "<personal|company> <stream or video URL | file> [live|vod] [--top N] [--vertical]"
+description: Clip the top moments of a live stream (while it's live), a finished stream/video, or live streams it finds on a topic, with clipbot, then turn the best clips into short-form post drafts for the personal or company brand. Use when the owner asks to clip a stream, find highlights, or make shorts from a video.
+argument-hint: "<personal|company> <stream or video URL | file | topic> [live|vod|hunt] [--top N] [--vertical]"
 ---
 
 # Clip a stream or video
@@ -16,6 +16,11 @@ Input: `$ARGUMENTS`. If the brand is missing, ask which one.
    - Live stream: `python -m clipbot live <url> [--top N] [--vertical]`. Run it in
      the background, since it keeps going until the stream ends or is stopped.
      Report clips as they appear in `clips/<name>/manifest.json`.
+   - A topic instead of a URL ("find chess streams and clip them"):
+     `python -m clipbot hunt "<topic>" [--only CHANNEL …]`. Run it in the
+     background. The ranked list of ready clips is `clips/<topic>/READY.md`.
+     Twitch search needs `TWITCH_CLIENT_ID` and `TWITCH_CLIENT_SECRET` (see
+     `clipbot/README.md`).
    - Finished stream or video: `python -m clipbot vod <url|file> --top 10`
    - Add `--vertical` when the clips are meant for Reels, TikTok or Shorts.
 4. **Review.** List the clips by rank, with timestamp, score and length. If the
